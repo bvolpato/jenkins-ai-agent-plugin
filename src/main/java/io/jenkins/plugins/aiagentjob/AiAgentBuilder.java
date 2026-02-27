@@ -12,6 +12,10 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
 
+/**
+ * Build step that launches the configured AI agent process and captures its output. Automatically
+ * added to every {@link AiAgentProject}.
+ */
 public class AiAgentBuilder extends Builder {
     @DataBoundConstructor
     public AiAgentBuilder() {}

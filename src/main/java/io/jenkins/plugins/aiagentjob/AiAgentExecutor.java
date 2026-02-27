@@ -30,6 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Runs the AI agent subprocess, wires stdout/stderr to the Jenkins build log and the raw JSONL log
+ * file, and handles the approval-gate flow when approvals are enabled.
+ */
 final class AiAgentExecutor {
     private AiAgentExecutor() {}
 

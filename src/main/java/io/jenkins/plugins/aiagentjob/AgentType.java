@@ -2,6 +2,7 @@ package io.jenkins.plugins.aiagentjob;
 
 import java.util.Locale;
 
+/** Supported AI coding agent families, each with a default API key environment variable. */
 public enum AgentType {
     CLAUDE_CODE("Claude Code", "ANTHROPIC_API_KEY"),
     CODEX("Codex CLI", "OPENAI_API_KEY"),

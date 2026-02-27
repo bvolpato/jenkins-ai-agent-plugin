@@ -25,6 +25,11 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * Per-build action that stores agent execution metadata and provides the inline conversation view
+ * on the build page. Also exposes Stapler endpoints for progressive event streaming, approval
+ * handling, and raw log access.
+ */
 public class AiAgentRunAction implements Action, RunAction2 {
     private static final String RAW_LOG_FILE = "ai-agent-stream.jsonl";
 

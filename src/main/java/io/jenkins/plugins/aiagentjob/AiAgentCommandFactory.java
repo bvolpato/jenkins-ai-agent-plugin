@@ -8,6 +8,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Builds the CLI command line for each supported {@link AgentType}. Also handles environment
+ * variable parsing and command-to-string serialisation.
+ */
 final class AiAgentCommandFactory {
     private AiAgentCommandFactory() {}
 

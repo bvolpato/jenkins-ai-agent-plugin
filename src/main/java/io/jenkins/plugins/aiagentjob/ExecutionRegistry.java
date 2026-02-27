@@ -15,6 +15,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+/**
+ * In-memory registry of live AI agent builds, used to coordinate tool-call approval gates between
+ * the running agent process and the Jenkins web UI.
+ */
 public final class ExecutionRegistry {
     private static final Map<String, LiveExecution> LIVE_RUNS = new ConcurrentHashMap<>();
 

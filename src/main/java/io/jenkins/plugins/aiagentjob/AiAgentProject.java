@@ -33,6 +33,10 @@ import org.kohsuke.stapler.StaplerResponse2;
 import java.io.IOException;
 import java.util.Collections;
 
+/**
+ * Top-level Jenkins job type for AI agent runs. Extends {@link FreeStyleProject} with
+ * agent-specific configuration (agent type, prompt, model, approval settings, API credentials).
+ */
 public class AiAgentProject extends FreeStyleProject {
     private AgentType agentType = AgentType.CLAUDE_CODE;
     private String model = "";

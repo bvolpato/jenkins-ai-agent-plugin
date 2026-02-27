@@ -14,6 +14,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Parses JSONL output from AI agents into classified {@link EventView} objects. Handles Claude
+ * Code, Codex, Cursor Agent, OpenCode, and Gemini CLI stream formats.
+ */
 final class AiAgentLogParser {
     private AiAgentLogParser() {}
 
