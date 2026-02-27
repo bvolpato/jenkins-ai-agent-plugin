@@ -8,6 +8,7 @@ release.properties
 
 # Jenkins
 work/
+hudson/
 *.hpi
 *.hpl
 *.jpi

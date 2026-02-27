@@ -1,0 +1,4 @@
+{"type":"system","subtype":"init","apiKeySource":"login","cwd":"/workspace/test","session_id":"test-cursor-01","model":"test-model-4","permissionMode":"default"}
+{"type":"user","message":{"role":"user","content":[{"type":"text","text":"summarize this project"}]},"session_id":"test-cursor-01"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"This is a test project."}]},"session_id":"test-cursor-01"}
+{"type":"result","subtype":"success","duration_ms":62643,"duration_api_ms":62643,"is_error":false,"result":"This is a test project.","session_id":"test-cursor-01","usage":{"inputTokens":103854,"outputTokens":1583,"cacheReadTokens":90357,"cacheWriteTokens":13489}}

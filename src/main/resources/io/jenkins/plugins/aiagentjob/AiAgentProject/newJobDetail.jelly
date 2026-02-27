@@ -1,4 +1,5 @@
 <?jelly escape-by-default='true'?>
 <div>
-  Native AI agent job type with SCM, scheduling, interactive tool-call approvals, and stream-json conversation logs.
+  Run AI coding agents (Claude Code, Codex, Cursor Agent, OpenCode, Gemini CLI) as Jenkins jobs.
+  Includes SCM checkout, live conversation streaming, tool-call approval gates, and post-build steps.
 </div>

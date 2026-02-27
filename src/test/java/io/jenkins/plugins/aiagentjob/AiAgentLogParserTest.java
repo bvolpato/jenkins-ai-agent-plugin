@@ -330,7 +330,9 @@ public class AiAgentLogParserTest {
         String json =
                 "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"duration_ms\":5000}";
         AiAgentLogParser.ParsedLine line = AiAgentLogParser.parseLine(1, json);
-        assertEquals("system", line.toEventView().getCategory());
+        assertEquals("result", line.toEventView().getCategory());
+        assertTrue(line.toEventView().getLabel().contains("Result"));
+        assertTrue(line.toEventView().getLabel().contains("5.0s"));
     }
 
     @Test
@@ -376,26 +378,41 @@ public class AiAgentLogParserTest {
     public void eventView_categoryLabelsAreReadable() {
         AiAgentLogParser.EventView view =
                 new AiAgentLogParser.EventView(
-                        1, "tool_call", "Test", "Details", java.time.Instant.now());
+                        1, "tool_call", "Bash", "", "ls -la", "", "{}", java.time.Instant.now());
         assertEquals("TOOL CALL", view.getCategoryLabel());
     }
 
     @Test
-    public void eventView_expandedByDefaultForErrors() {
+    public void eventView_inlineContentForAssistantAndResult() {
         AiAgentLogParser.EventView error =
                 new AiAgentLogParser.EventView(
-                        1, "error", "Error", "Details", java.time.Instant.now());
-        assertTrue(error.isExpandedByDefault());
+                        1,
+                        "error",
+                        "Error",
+                        "Something failed",
+                        "",
+                        "",
+                        "{}",
+                        java.time.Instant.now());
+        assertTrue(error.isInlineContent());
 
         AiAgentLogParser.EventView toolCall =
                 new AiAgentLogParser.EventView(
-                        2, "tool_call", "TC", "Details", java.time.Instant.now());
-        assertTrue(toolCall.isExpandedByDefault());
+                        2, "tool_call", "Bash", "", "ls", "", "{}", java.time.Instant.now());
+        assertTrue(toolCall.isToolEvent());
+        assertFalse(toolCall.isInlineContent());
 
         AiAgentLogParser.EventView assistant =
                 new AiAgentLogParser.EventView(
-                        3, "assistant", "Msg", "Details", java.time.Instant.now());
-        assertFalse(assistant.isExpandedByDefault());
+                        3,
+                        "assistant",
+                        "Assistant",
+                        "Hello",
+                        "",
+                        "",
+                        "{}",
+                        java.time.Instant.now());
+        assertTrue(assistant.isInlineContent());
     }
 
     @Test

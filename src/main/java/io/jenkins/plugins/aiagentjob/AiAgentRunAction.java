@@ -103,6 +103,10 @@ public class AiAgentRunAction implements Action, RunAction2 {
         run.save();
     }
 
+    public Run<?, ?> getRun() {
+        return run;
+    }
+
     public String getAgentType() {
         return agentType;
     }
@@ -164,9 +168,21 @@ public class AiAgentRunAction implements Action, RunAction2 {
                     new AiAgentLogParser.EventView(
                             -1,
                             "error",
-                            "Failed to read raw agent logs",
-                            e.toString(),
+                            "Error",
+                            "Failed to read raw agent logs: " + e.toString(),
+                            "",
+                            "",
+                            "",
                             java.time.Instant.now()));
+        }
+    }
+
+    /** Returns aggregated token usage and cost stats from the JSONL log. */
+    public AgentUsageStats getUsageStats() {
+        try {
+            return AgentUsageStats.fromLogFile(getRawLogFile());
+        } catch (IOException e) {
+            return new AgentUsageStats();
         }
     }
 
@@ -240,8 +256,11 @@ public class AiAgentRunAction implements Action, RunAction2 {
             obj.put("id", ev.getId());
             obj.put("category", ev.getCategory());
             obj.put("categoryLabel", ev.getCategoryLabel());
+            obj.put("label", ev.getLabel());
+            obj.put("content", ev.getContent());
+            obj.put("toolInput", ev.getToolInput());
+            obj.put("toolOutput", ev.getToolOutput());
             obj.put("summary", ev.getSummary());
-            obj.put("details", ev.getDetails());
             eventsJson.add(obj);
         }
 
@@ -261,6 +280,24 @@ public class AiAgentRunAction implements Action, RunAction2 {
             approvalsJson.add(paObj);
         }
         result.put("pendingApprovals", approvalsJson);
+
+        if (!isLive()) {
+            AgentUsageStats stats = getUsageStats();
+            if (stats.hasData()) {
+                JSONObject statsJson = new JSONObject();
+                statsJson.put("inputTokens", stats.getInputTokens());
+                statsJson.put("outputTokens", stats.getOutputTokens());
+                statsJson.put("cacheReadTokens", stats.getCacheReadTokens());
+                statsJson.put("cacheWriteTokens", stats.getCacheWriteTokens());
+                statsJson.put("totalTokens", stats.getTotalTokens());
+                statsJson.put("reasoningTokens", stats.getReasoningTokens());
+                statsJson.put("costDisplay", stats.getCostDisplay());
+                statsJson.put("durationDisplay", stats.getDurationDisplay());
+                statsJson.put("numTurns", stats.getNumTurns());
+                statsJson.put("toolCalls", stats.getToolCalls());
+                result.put("usageStats", statsJson);
+            }
+        }
 
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write(result.toString());

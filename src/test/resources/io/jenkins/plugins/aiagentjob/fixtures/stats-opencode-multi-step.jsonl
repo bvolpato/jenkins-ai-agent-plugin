@@ -1,0 +1,6 @@
+{"type":"step_start","timestamp":1772217589779,"sessionID":"test-opencode-02","part":{"id":"prt_01","type":"step-start"}}
+{"type":"text","timestamp":1772217590540,"sessionID":"test-opencode-02","part":{"id":"prt_02","type":"text","text":"Let me help."}}
+{"type":"step_finish","timestamp":1772217590589,"sessionID":"test-opencode-02","part":{"id":"prt_03","type":"step-finish","reason":"tool_use","cost":0.005,"tokens":{"total":10000,"input":100,"output":50,"reasoning":10,"cache":{"read":80,"write":9000}}}}
+{"type":"step_start","timestamp":1772217600000,"sessionID":"test-opencode-02","part":{"id":"prt_04","type":"step-start"}}
+{"type":"text","timestamp":1772217610000,"sessionID":"test-opencode-02","part":{"id":"prt_05","type":"text","text":"Done!"}}
+{"type":"step_finish","timestamp":1772217610500,"sessionID":"test-opencode-02","part":{"id":"prt_06","type":"step-finish","reason":"stop","cost":0.003,"tokens":{"total":8000,"input":200,"output":30,"reasoning":5,"cache":{"read":100,"write":7000}}}}

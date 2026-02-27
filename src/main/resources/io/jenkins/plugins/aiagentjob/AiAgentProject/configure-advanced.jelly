@@ -4,5 +4,4 @@
          xmlns:f="/lib/form"
          xmlns:p="/lib/hudson/project">
   <p:config-customWorkspace />
-  <p:config-concurrentBuild />
 </j:jelly>

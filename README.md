@@ -1,119 +1,119 @@
 # Jenkins AI Agent Job Plugin
 
-Native Jenkins plugin that adds a new job type: **AI Agent Job**.
+[![CI](https://github.com/brunocvcunha/jenkins-ai-agent-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/brunocvcunha/jenkins-ai-agent-plugin/actions/workflows/ci.yml)
 
-The job type is designed for autonomous coding-agent runs with:
+A Jenkins plugin that adds a native **AI Agent Job** type for running autonomous coding agents as first-class Jenkins builds.
 
-- SCM checkout + standard Jenkins scheduling/triggers
-- AI agent selection and runtime controls in job config
-- stream-json/raw event capture for full run traceability
-- interactive run page showing conversation events, thinking, tool calls, and tool outputs
-- optional approval gates that block the build until a reviewer approves/denies tool calls
+## Features
 
-## What This Plugin Adds
+- **Native job type** — appears in the Jenkins "New Item" dialog alongside Freestyle and Pipeline jobs.
+- **Multiple agent support** — Claude Code, Codex CLI, Cursor Agent, OpenCode, and Gemini CLI.
+- **Inline conversation view** — live-streaming conversation on the build page with structured display of messages, tool calls, and outputs.
+- **Approval gates** — optionally pause builds for human review before tool execution.
+- **Usage statistics** — token counts, cost, and duration extracted from agent logs and displayed per build.
+- **Standard Jenkins integrations** — SCM checkout, build triggers, credentials injection, post-build steps, and publishers.
 
-### New job type
+## Supported Agents
 
-- **AI Agent Job** appears in the Jenkins "New Item" UI.
-- It is a native `Project`-style job, so it supports:
-  - SCM configuration
-  - build triggers/schedules (cron, SCM polling, etc.)
-  - node/workspace controls from Jenkins core
+| Agent | Output Format | Cost Tracking |
+|-------|--------------|---------------|
+| Claude Code | stream-json | Yes |
+| Codex CLI | JSON | Tokens only |
+| Cursor Agent | stream-json | Tokens only |
+| OpenCode | JSON | Yes |
+| Gemini CLI | stream-json | Tokens only |
 
-### Agent execution model
+## Installation
 
-Each build executes one selected agent command with configurable prompt/model/options.
+1. Build the plugin (see [Building](#building)) or download a release `.hpi`.
+2. Go to **Manage Jenkins > Plugins > Advanced settings**.
+3. Upload the `.hpi` file under **Deploy Plugin**.
+4. Restart Jenkins.
 
-Supported agent families:
+## Usage
 
-- Claude Code
-- Codex CLI
-- Cursor Agent
-- OpenCode
-- Gemini CLI
+1. Click **New Item**, enter a name, and select **AI Agent Job**.
+2. Configure:
+   - **Agent Type** — select the coding agent to run.
+   - **Prompt** — the task to send to the agent.
+   - **Model** — optional model override (e.g., `claude-sonnet-4`).
+   - **YOLO mode** — skip confirmation prompts in the agent.
+   - **Approvals** — require human approval for tool calls.
+   - **Environment variables** — inject additional env vars (`KEY=VALUE`, one per line).
+   - **Command override** — replace the default command template entirely.
+   - **Extra CLI args** — append flags to the generated command.
+3. Optionally add SCM, build triggers, post-build steps, and publishers as with any Jenkins job.
+4. Build the job. The conversation streams live on the build page.
 
-### Conversation and event visibility
+### Environment Variables
 
-For each run, the plugin stores raw event logs in JSONL (`stream-json`/`json` style) and renders an interactive run page:
+The plugin injects these variables into every build:
 
-- `AI Agent Conversation` action on build page
-- Event timeline grouped by category:
-  - user
-  - assistant
-  - thinking
-  - tool_call
-  - tool_result
-  - system/error/raw
-- Expandable details for each event (pretty JSON block)
-- Raw logs endpoint:
-  - `<build-url>/ai-agent/raw`
+| Variable | Description |
+|----------|-------------|
+| `AI_AGENT_PROMPT` | The configured prompt text |
+| `AI_AGENT_MODEL` | The configured model name |
+| `AI_AGENT_JOB` | The Jenkins job name |
+| `AI_AGENT_BUILD_NUMBER` | The build number |
 
-### Approval gate mode
+### Credential Injection
 
-When approvals are enabled (and YOLO is disabled), tool-call events trigger a blocking approval request:
+If the selected agent type has an associated credential ID (e.g., API key), the plugin resolves it from Jenkins credentials and injects it as an environment variable. The credential is masked in the build log.
 
-- Build pauses waiting for reviewer input.
-- Reviewer can approve/deny from build page (`AI Agent Conversation`).
-- Timeout is configurable per job (seconds).
-- Deny or timeout fails the build (unless you disable fail-on-error).
+### Approval Gates
 
-## Job Configuration
+When approvals are enabled and YOLO mode is off, tool calls detected in the agent's output trigger a blocking approval request. The build pauses until a user approves or denies from the build page. Denied or timed-out requests fail the build.
 
-In `AI Agent Job` configuration:
+### Usage Statistics
 
-- **Agent Type**: pick one of the supported agents
-- **Prompt**: task prompt sent to the agent
-- **Model**: optional model override
-- **Working directory**: relative path within workspace
-- **Enable YOLO mode**: broad autonomous execution mode
-- **Require manual approvals**: enforce tool-call gating
-- **Approval timeout (seconds)**: block duration before timeout fail
-- **Command override**:
-  - optional full command to replace built-in command template
-  - receives env vars:
-    - `AI_AGENT_PROMPT`
-    - `AI_AGENT_MODEL`
-    - `AI_AGENT_JOB`
-    - `AI_AGENT_BUILD_NUMBER`
-- **Extra CLI args**: appended to generated command
-- **Environment variables**: multiline `KEY=VALUE`
-- **Fail build on non-zero exit**: strict/lenient mode
+After a build completes, a statistics bar shows token usage, cost (when available), and duration. Data is extracted from the agent's own reporting in the JSONL log. The level of detail depends on the agent — Claude Code reports full cost, while others report only token counts.
 
-## Built-in Agent Command Strategy
+## Building
 
-Default command templates are wired for non-interactive automation:
-
-- Claude Code: stream-json flags
-- Codex: `codex exec --json`
-- Cursor Agent: stream-json output
-- OpenCode: `opencode run --format json`
-- Gemini CLI: `--output-format stream-json`
-
-If your environment uses different binary paths/flags, set **Command override**.
-
-## Build and Test
-
-From repository root:
+Requires Java 17+ and Maven 3.9+.
 
 ```bash
-mvn -B test
-mvn -B package -DskipTests
+# Run tests
+mvn clean verify
+
+# Package without tests
+mvn clean package -DskipTests
 ```
 
-Generated plugin file:
+The plugin artifact is generated at `target/jenkins-ai-agent-plugin.hpi`.
 
-- `target/jenkins-ai-agent-plugin.hpi`
+## Development
 
-## Install in Jenkins
+```bash
+# Format code (Google Java Format, AOSP style)
+mvn com.spotify.fmt:fmt-maven-plugin:format
 
-1. Open `Manage Jenkins` -> `Plugins` -> `Advanced`.
-2. In **Deploy Plugin**, upload:
-   - `target/jenkins-ai-agent-plugin.hpi`
-3. Restart Jenkins.
-4. Create a new item of type **AI Agent Job**.
+# Run with a local Jenkins instance
+mvn hpi:run
+```
 
-## Notes and Scope
+The project uses:
+- [Google Java Format](https://github.com/google/google-java-format) (AOSP variant) via `fmt-maven-plugin`
+- [JaCoCo](https://www.jacoco.org/) for test coverage
+- [SpotBugs](https://spotbugs.github.io/) for static analysis
+- [Jenkins Test Harness](https://github.com/jenkinsci/jenkins-test-harness) for integration tests
 
-- The plugin captures and renders structured run events for traceability and review.
-- Approval gating is implemented at the Jenkins-runner layer (blocking on detected tool-call events).
-- Agent CLI specifics evolve quickly; use **Command override** for provider-specific tuning.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+
+## Architecture
+
+```
+src/main/java/io/jenkins/plugins/aiagentjob/
+├── AiAgentProject.java        # Job type (extends Project)
+├── AiAgentBuild.java          # Build execution logic
+├── AiAgentRunAction.java       # Per-build action: conversation UI, streaming, approvals
+├── AiAgentLogParser.java       # JSONL log parser for all agent formats
+├── AgentUsageStats.java        # Token/cost/duration stats normalization
+├── AgentType.java              # Enum of supported agents with command templates
+├── ExecutionRegistry.java      # In-memory registry for live execution state
+└── AiAgentCredentialInjection.java  # Credential resolution and env injection
+```
+
+## License
+
+MIT License. See [pom.xml](pom.xml) for details.

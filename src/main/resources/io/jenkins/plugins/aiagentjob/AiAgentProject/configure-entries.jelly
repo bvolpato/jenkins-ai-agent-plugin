@@ -7,7 +7,6 @@
          xmlns:p="/lib/hudson/project">
   <st:include page="configure-common.jelly" />
 
-  <p:config-scm />
   <p:config-trigger />
 
   <f:section title="AI Agent Execution">
@@ -90,6 +89,7 @@
     </f:advanced>
   </f:section>
 
+  <p:config-builders />
   <p:config-buildWrappers />
   <p:config-publishers2 />
 </j:jelly>

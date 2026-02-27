@@ -1,0 +1,4 @@
+{"type":"init","timestamp":"2026-02-27T18:32:57.366Z","session_id":"test-gemini-01","model":"gemini-test-pro"}
+{"type":"message","timestamp":"2026-02-27T18:32:57.366Z","role":"user","content":"what is 6 times 7?"}
+{"type":"message","timestamp":"2026-02-27T18:33:00.638Z","role":"assistant","content":"42","delta":true}
+{"type":"result","timestamp":"2026-02-27T18:33:00.654Z","status":"success","stats":{"total_tokens":4925,"input_tokens":4824,"output_tokens":2,"cached":500,"input":4824,"duration_ms":3289,"tool_calls":0}}
