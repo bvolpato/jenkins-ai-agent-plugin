@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [17, 21]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+
+      - name: Build and verify
+        run: mvn -B clean verify
+
+      - name: Upload coverage report
+        if: matrix.java == 21
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+          retention-days: 14
+
+      - name: Upload HPI
+        if: matrix.java == 21
+        uses: actions/upload-artifact@v4
+        with:
+          name: jenkins-ai-agent-plugin.hpi
+          path: target/jenkins-ai-agent-plugin.hpi
+          retention-days: 30
