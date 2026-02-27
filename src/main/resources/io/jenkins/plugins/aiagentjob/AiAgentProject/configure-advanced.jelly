@@ -1,0 +1,8 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core"
+         xmlns:st="jelly:stapler"
+         xmlns:f="/lib/form"
+         xmlns:p="/lib/hudson/project">
+  <p:config-customWorkspace />
+  <p:config-concurrentBuild />
+</j:jelly>

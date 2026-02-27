@@ -1,0 +1,331 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core"
+         xmlns:st="jelly:stapler"
+         xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson"
+         xmlns:f="/lib/form">
+
+  <style>
+    .ai-agent-summary {
+      margin: 16px 0;
+      font-family: var(--font-family-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+    }
+    .ai-agent-summary h3 {
+      margin: 0 0 8px 0;
+      font-size: 1.1em;
+    }
+    .ai-agent-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 0.85em;
+      color: #666;
+      margin-bottom: 12px;
+    }
+    .ai-agent-meta span {
+      background: #f4f4f4;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .ai-agent-conversation {
+      max-height: 600px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+    .ai-event {
+      padding: 8px 12px;
+      border-bottom: 1px solid #eee;
+      font-size: 0.9em;
+    }
+    .ai-event:last-child {
+      border-bottom: none;
+    }
+    .ai-event-label {
+      display: inline-block;
+      font-size: 0.75em;
+      font-weight: 600;
+      text-transform: uppercase;
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .ai-label-assistant { background: #e8f5e9; color: #2e7d32; }
+    .ai-label-thinking  { background: #fff3e0; color: #e65100; }
+    .ai-label-tool-call  { background: #e3f2fd; color: #1565c0; }
+    .ai-label-tool-result { background: #e8eaf6; color: #283593; }
+    .ai-label-system    { background: #f3e5f5; color: #6a1b9a; }
+    .ai-label-user      { background: #fce4ec; color: #c62828; }
+    .ai-label-error     { background: #ffebee; color: #b71c1c; }
+    .ai-label-raw       { background: #eceff1; color: #546e7a; }
+    .ai-event-summary {
+      color: #333;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .ai-event details summary {
+      cursor: pointer;
+      user-select: none;
+    }
+    .ai-event details pre {
+      margin: 6px 0 2px 0;
+      padding: 8px;
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      font-size: 0.82em;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .ai-agent-approvals {
+      margin-bottom: 12px;
+    }
+    .ai-agent-approval-card {
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+    }
+    .ai-agent-approval-card .actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 6px;
+    }
+    .ai-agent-links {
+      margin-top: 8px;
+      font-size: 0.85em;
+    }
+    .ai-agent-links a {
+      margin-right: 16px;
+    }
+    .ai-agent-live-indicator {
+      padding: 8px 12px;
+      background: #e3f2fd;
+      border: 1px solid #90caf9;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-size: 0.9em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ai-agent-live-indicator .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid #90caf9;
+      border-top-color: #1565c0;
+      border-radius: 50%;
+      animation: ai-spin 0.8s linear infinite;
+    }
+    @keyframes ai-spin {
+      to { transform: rotate(360deg); }
+    }
+    .ai-agent-empty {
+      padding: 12px;
+      color: #888;
+      font-size: 0.9em;
+    }
+  </style>
+
+  <div class="ai-agent-summary" id="ai-agent-root">
+    <h3>
+      <img src="${resURL}/images/svgs/terminal.svg" width="20" height="20"
+           style="vertical-align: middle; margin-right: 4px;" alt="" />
+      AI Agent Conversation
+    </h3>
+
+    <div class="ai-agent-meta" id="ai-agent-meta">
+      <span><strong>Agent:</strong> ${it.agentType}</span>
+      <j:if test="${it.model != ''}">
+        <span><strong>Model:</strong> ${it.model}</span>
+      </j:if>
+      <j:if test="${it.yoloMode}">
+        <span style="background:#fff3e0;color:#e65100;">YOLO</span>
+      </j:if>
+      <j:if test="${it.approvalsEnabled}">
+        <span style="background:#e3f2fd;color:#1565c0;">Approvals</span>
+      </j:if>
+      <span id="ai-agent-exit-badge">
+        <j:if test="${it.exitCode != null}">
+          <j:choose>
+            <j:when test="${it.exitCode == 0}">
+              <span style="background:#e8f5e9;color:#2e7d32;">Exit: ${it.exitCode}</span>
+            </j:when>
+            <j:otherwise>
+              <span style="background:#ffebee;color:#b71c1c;">Exit: ${it.exitCode}</span>
+            </j:otherwise>
+          </j:choose>
+        </j:if>
+      </span>
+    </div>
+
+    <div id="ai-agent-live-banner" style="${it.live ? '' : 'display:none;'}">
+      <div class="ai-agent-live-indicator">
+        <span class="spinner"></span>
+        Build is running — conversation streams automatically.
+      </div>
+    </div>
+
+    <div id="ai-agent-approvals-container" class="ai-agent-approvals"></div>
+
+    <div class="ai-agent-conversation" id="ai-agent-events-container"></div>
+
+    <div id="ai-agent-empty" class="ai-agent-empty" style="display:none;">
+      No conversation events captured yet.
+    </div>
+
+    <div class="ai-agent-links">
+      <a href="${it.urlName}/raw">Raw stream-json log</a>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      var baseUrl = "${it.urlName}";
+      var nextStart = 0;
+      var isLive = ${it.live};
+      var container = document.getElementById('ai-agent-events-container');
+      var emptyMsg = document.getElementById('ai-agent-empty');
+      var liveBanner = document.getElementById('ai-agent-live-banner');
+      var approvalsContainer = document.getElementById('ai-agent-approvals-container');
+      var exitBadge = document.getElementById('ai-agent-exit-badge');
+      var pollInterval = 2000;
+      var pollTimer = null;
+      var eventCount = 0;
+
+      var labelClasses = {
+        'assistant': 'ai-label-assistant',
+        'thinking': 'ai-label-thinking',
+        'tool_call': 'ai-label-tool-call',
+        'tool_result': 'ai-label-tool-result',
+        'system': 'ai-label-system',
+        'user': 'ai-label-user',
+        'error': 'ai-label-error'
+      };
+
+      function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(text || ''));
+        return div.innerHTML;
+      }
+
+      function renderEvent(ev) {
+        var labelClass = labelClasses[ev.category] || 'ai-label-raw';
+        var labelText = ev.category === 'tool_call' ? 'Tool Call'
+                      : ev.category === 'tool_result' ? 'Tool Result'
+                      : ev.categoryLabel;
+        var html = '<div class="ai-event">';
+        html += '<span class="ai-event-label ' + labelClass + '">' + escapeHtml(labelText) + '</span>';
+        html += '<details>';
+        html += '<summary class="ai-event-summary">' + escapeHtml(ev.summary) + '</summary>';
+        html += '<pre>' + escapeHtml(ev.details) + '</pre>';
+        html += '</details>';
+        html += '</div>';
+        return html;
+      }
+
+      function renderApprovals(approvals) {
+        if (!approvals || approvals.length === 0) {
+          approvalsContainer.innerHTML = '';
+          return;
+        }
+        var html = '';
+        for (var i = 0; i &lt; approvals.length; i++) {
+          var pa = approvals[i];
+          html += '<div class="ai-agent-approval-card">';
+          html += '<strong>Approval required:</strong> ' + escapeHtml(pa.toolName);
+          html += ' <span style="color:#888;font-size:0.85em;">— ' + escapeHtml(pa.inputSummary) + '</span>';
+          html += '<div class="actions">';
+          html += '<form method="post" action="' + baseUrl + '/approve" style="display:inline;">';
+          html += '<input type="hidden" name="id" value="' + escapeHtml(pa.id) + '" />';
+          html += '<button type="submit">Approve</button>';
+          html += '</form>';
+          html += '<form method="post" action="' + baseUrl + '/deny" style="display:inline;">';
+          html += '<input type="hidden" name="id" value="' + escapeHtml(pa.id) + '" />';
+          html += '<input type="text" name="reason" placeholder="reason (optional)" style="width:180px;" />';
+          html += '<button type="submit">Deny</button>';
+          html += '</form>';
+          html += '</div></div>';
+        }
+        approvalsContainer.innerHTML = html;
+      }
+
+      function updateExitBadge(exitCode) {
+        if (exitCode === null || exitCode === undefined) {
+          exitBadge.innerHTML = '';
+          return;
+        }
+        if (exitCode === 0) {
+          exitBadge.innerHTML = '<span style="background:#e8f5e9;color:#2e7d32;">Exit: ' + exitCode + '</span>';
+        } else {
+          exitBadge.innerHTML = '<span style="background:#ffebee;color:#b71c1c;">Exit: ' + exitCode + '</span>';
+        }
+      }
+
+      function poll() {
+        var crumb = document.querySelector('meta[name=.crumb]');
+        var crumbValue = crumb ? crumb.getAttribute('content') : '';
+
+        var url = baseUrl + '/progressiveEvents?start=' + nextStart;
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        if (crumbValue) {
+          xhr.setRequestHeader('.crumb', crumbValue);
+        }
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState !== 4) return;
+          if (xhr.status !== 200) {
+            schedulePoll();
+            return;
+          }
+          try {
+            var data = JSON.parse(xhr.responseText);
+            var events = data.events || [];
+            var shouldScroll = container.scrollHeight - container.scrollTop - container.clientHeight &lt; 50;
+
+            if (events.length > 0) {
+              var html = '';
+              for (var i = 0; i &lt; events.length; i++) {
+                html += renderEvent(events[i]);
+                eventCount++;
+              }
+              container.insertAdjacentHTML('beforeend', html);
+              if (shouldScroll) {
+                container.scrollTop = container.scrollHeight;
+              }
+            }
+            nextStart = data.nextStart || nextStart;
+            isLive = data.live;
+
+            emptyMsg.style.display = (eventCount === 0) ? '' : 'none';
+            liveBanner.style.display = isLive ? '' : 'none';
+
+            renderApprovals(data.pendingApprovals);
+            updateExitBadge(data.exitCode);
+
+          } catch(e) {
+            // parse error, continue polling
+          }
+          schedulePoll();
+        };
+        xhr.send();
+      }
+
+      function schedulePoll() {
+        if (isLive) {
+          pollTimer = setTimeout(poll, pollInterval);
+        }
+      }
+
+      poll();
+    })();
+  </script>
+
+</j:jelly>
