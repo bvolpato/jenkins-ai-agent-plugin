@@ -1,0 +1,4 @@
+<?jelly escape-by-default='true'?>
+<div>
+  Adds a native Jenkins job type called <strong>AI Agent Job</strong> for running Claude Code, Codex, Cursor Agent, OpenCode, and Gemini CLI with interactive conversation logs and approval gates.
+</div>

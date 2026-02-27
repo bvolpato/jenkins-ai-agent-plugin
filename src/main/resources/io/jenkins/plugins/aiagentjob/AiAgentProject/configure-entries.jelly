@@ -1,0 +1,95 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core"
+         xmlns:st="jelly:stapler"
+         xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson"
+         xmlns:f="/lib/form"
+         xmlns:p="/lib/hudson/project">
+  <st:include page="configure-common.jelly" />
+
+  <p:config-scm />
+  <p:config-trigger />
+
+  <f:section title="AI Agent Execution">
+    <f:entry title="Agent Type">
+      <select class="setting-input" name="agentType">
+        <j:forEach var="option" items="${descriptor.doFillAgentTypeItems()}">
+          <f:option value="${option.value}" selected="${option.value == it.agentType.name()}">${option.name}</f:option>
+        </j:forEach>
+      </select>
+    </f:entry>
+
+    <f:entry title="Prompt" field="prompt">
+      <f:textarea name="prompt" value="${it.prompt}" />
+    </f:entry>
+
+    <f:entry title="Model (optional)" field="model">
+      <f:textbox name="model" value="${it.model}" />
+    </f:entry>
+
+    <f:entry title="Working directory" field="workingDirectory">
+      <f:textbox name="workingDirectory" value="${it.workingDirectory}" />
+      <f:description>Relative to the job workspace. Leave empty to run in workspace root.</f:description>
+    </f:entry>
+
+    <f:entry title="Enable YOLO mode" field="yoloMode">
+      <f:checkbox name="yoloMode" checked="${it.yoloMode}" />
+    </f:entry>
+
+    <f:entry title="Require manual approvals" field="requireApprovals">
+      <f:checkbox name="requireApprovals" checked="${it.requireApprovals}" />
+      <f:description>When enabled, tool calls pause the build until approved from the run page.</f:description>
+    </f:entry>
+
+    <f:entry title="Approval timeout (seconds)" field="approvalTimeoutSeconds">
+      <f:number name="approvalTimeoutSeconds" value="${it.approvalTimeoutSeconds}" min="1" step="1" />
+    </f:entry>
+
+    <f:entry title="API Key Credential" field="apiCredentialsId">
+      <f:select name="apiCredentialsId" />
+      <f:description>
+        Select a Secret Text credential containing the API key for this agent.
+        The key will be injected as the appropriate environment variable
+        (e.g. ANTHROPIC_API_KEY for Claude Code, OPENAI_API_KEY for Codex/OpenCode,
+        CURSOR_API_KEY for Cursor Agent, GEMINI_API_KEY for Gemini CLI).
+        If left empty, the agent will use whatever key is available on the system.
+      </f:description>
+    </f:entry>
+
+    <f:advanced>
+      <f:entry title="API Key env var override" field="apiKeyEnvVar">
+        <f:textbox name="apiKeyEnvVar" value="${it.apiKeyEnvVar}" />
+        <f:description>
+          Override the environment variable name used to inject the API key.
+          Leave empty to use the agent's default.
+          Useful when an agent supports multiple providers (e.g. OpenCode can use ANTHROPIC_API_KEY instead of OPENAI_API_KEY).
+        </f:description>
+      </f:entry>
+
+      <f:entry title="Command override" field="commandOverride">
+        <f:expandableTextbox name="commandOverride" value="${it.commandOverride}" />
+        <f:description>Optional full command to execute instead of built-in defaults. You can use AI_AGENT_PROMPT and AI_AGENT_MODEL env vars.</f:description>
+      </f:entry>
+
+      <f:entry title="Extra CLI args" field="extraArgs">
+        <f:textbox name="extraArgs" value="${it.extraArgs}" />
+      </f:entry>
+
+      <f:entry title="Additional environment variables" field="environmentVariables">
+        <f:textarea name="environmentVariables" value="${it.environmentVariables}" />
+        <f:description>
+          Extra environment variables (KEY=VALUE, one per line). Lines starting with # are ignored.
+          Note: for API keys, prefer the credential selector above so secrets are stored securely.
+          Variables here are stored in plain text in the job configuration.
+        </f:description>
+      </f:entry>
+
+      <f:entry title="Fail build on agent non-zero exit" field="failOnAgentError">
+        <f:checkbox name="failOnAgentError" checked="${it.failOnAgentError}" />
+      </f:entry>
+    </f:advanced>
+  </f:section>
+
+  <p:config-buildWrappers />
+  <p:config-publishers2 />
+</j:jelly>

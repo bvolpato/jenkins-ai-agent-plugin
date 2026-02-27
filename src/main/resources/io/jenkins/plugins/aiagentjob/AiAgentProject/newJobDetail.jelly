@@ -1,0 +1,4 @@
+<?jelly escape-by-default='true'?>
+<div>
+  Native AI agent job type with SCM, scheduling, interactive tool-call approvals, and stream-json conversation logs.
+</div>

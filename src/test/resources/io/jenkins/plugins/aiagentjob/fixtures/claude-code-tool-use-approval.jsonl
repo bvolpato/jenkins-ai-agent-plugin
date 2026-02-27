@@ -1,0 +1,6 @@
+{"type":"system","subtype":"init","session_id":"sess-approval-01","model":"claude-sonnet-4-20250514"}
+{"type":"assistant","message":{"id":"msg_a01","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[{"type":"text","text":"I'll fix the bug by modifying the source file."},{"type":"tool_use","id":"toolu_a01","name":"Edit","input":{"file_path":"/workspace/src/main.py","old_string":"print('hello')","new_string":"print('hello world')"}}],"stop_reason":"tool_use"},"session_id":"sess-approval-01"}
+{"type":"assistant","message":{"id":"msg_a02","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[{"type":"tool_use","id":"toolu_a02","name":"Bash","input":{"command":"python -m pytest tests/"}}],"stop_reason":"tool_use"},"session_id":"sess-approval-01"}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_a02","content":"PASSED: 3 tests in 0.5s","is_error":false}]},"session_id":"sess-approval-01"}
+{"type":"assistant","message":{"id":"msg_a03","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[{"type":"text","text":"The bug has been fixed and all tests pass."}],"stop_reason":"end_turn"},"session_id":"sess-approval-01"}
+{"type":"result","subtype":"success","is_error":false,"duration_ms":8500,"session_id":"sess-approval-01"}

@@ -1,0 +1,11 @@
+{"type":"system","subtype":"init","session_id":"sess-stream-01","model":"claude-sonnet-4-20250514"}
+{"type":"stream_event","event":{"type":"message_start","message":{"id":"msg_s01","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[],"stop_reason":null}},"session_id":"sess-stream-01"}
+{"type":"stream_event","event":{"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":""}},"session_id":"sess-stream-01"}
+{"type":"stream_event","event":{"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Let me analyze this code"}},"session_id":"sess-stream-01"}
+{"type":"stream_event","event":{"type":"content_block_stop","index":0},"session_id":"sess-stream-01"}
+{"type":"stream_event","event":{"type":"content_block_start","index":1,"content_block":{"type":"text","text":""}},"session_id":"sess-stream-01"}
+{"type":"stream_event","event":{"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"Here is my analysis of the code."}},"session_id":"sess-stream-01"}
+{"type":"stream_event","event":{"type":"content_block_stop","index":1},"session_id":"sess-stream-01"}
+{"type":"stream_event","event":{"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"input_tokens":100,"output_tokens":50}},"session_id":"sess-stream-01"}
+{"type":"stream_event","event":{"type":"message_stop"},"session_id":"sess-stream-01"}
+{"type":"result","subtype":"success","is_error":false,"duration_ms":2100,"session_id":"sess-stream-01"}

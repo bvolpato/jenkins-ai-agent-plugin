@@ -1,0 +1,10 @@
+{"type":"item.started","item":{"id":"item_001","type":"reasoning","status":"in_progress","text":"I need to check the project structure first."}}
+{"type":"item.completed","item":{"id":"item_001","type":"reasoning","status":"completed","text":"I need to check the project structure first."}}
+{"type":"item.started","item":{"id":"item_002","type":"command_execution","status":"in_progress","command":"bash -lc 'ls -la'"}}
+{"type":"item.completed","item":{"id":"item_002","type":"command_execution","status":"completed","command":"bash -lc 'ls -la'","output":"total 8\n-rw-r--r-- 1 user staff 100 Jan 1 00:00 README.md\n-rw-r--r-- 1 user staff 200 Jan 1 00:00 package.json"}}
+{"type":"item.started","item":{"id":"item_003","type":"agent_message","status":"in_progress","text":"The project contains a README.md and package.json."}}
+{"type":"item.completed","item":{"id":"item_003","type":"agent_message","status":"completed","text":"The project contains a README.md and package.json. This is a Node.js project."}}
+{"type":"item.started","item":{"id":"item_004","type":"command_execution","status":"in_progress","command":"bash -lc 'cat package.json'"}}
+{"type":"item.completed","item":{"id":"item_004","type":"command_execution","status":"completed","command":"bash -lc 'cat package.json'","output":"{\"name\":\"sample-app\",\"version\":\"1.0.0\"}"}}
+{"type":"item.started","item":{"id":"item_005","type":"agent_message","status":"in_progress","text":""}}
+{"type":"item.completed","item":{"id":"item_005","type":"agent_message","status":"completed","text":"I've analyzed the project. It's a Node.js application called sample-app at version 1.0.0."}}

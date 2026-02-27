@@ -1,0 +1,5 @@
+{"type":"system","subtype":"init","session_id":"sess-error-01","model":"claude-sonnet-4-20250514"}
+{"type":"assistant","message":{"id":"msg_e01","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[{"type":"tool_use","id":"toolu_e01","name":"Bash","input":{"command":"npm install"}}],"stop_reason":"tool_use"},"session_id":"sess-error-01"}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_e01","content":"npm ERR! code ENOENT\nnpm ERR! syscall open","is_error":true}]},"session_id":"sess-error-01"}
+{"type":"assistant","message":{"id":"msg_e02","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[{"type":"text","text":"The npm install failed because package.json was not found. Let me investigate."}],"stop_reason":"end_turn"},"session_id":"sess-error-01"}
+{"type":"result","subtype":"error","is_error":true,"error":"Agent encountered an error","duration_ms":1200,"session_id":"sess-error-01"}

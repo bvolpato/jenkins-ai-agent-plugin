@@ -1,0 +1,16 @@
+package io.jenkins.plugins.aiagentjob;
+
+import hudson.model.FreeStyleBuild;
+
+import java.io.File;
+import java.io.IOException;
+
+public class AiAgentBuild extends FreeStyleBuild {
+    public AiAgentBuild(AiAgentProject project) throws IOException {
+        super(project);
+    }
+
+    public AiAgentBuild(AiAgentProject project, File buildDir) throws IOException {
+        super(project, buildDir);
+    }
+}
