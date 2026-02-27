@@ -32,7 +32,12 @@
     .ai-badge-raw { background: #eceff1; color: #546e7a; }
 
     /* Inline message content (assistant, user, result) */
-    .ai-msg-content { white-space: pre-wrap; word-break: break-word; color: #222; margin-top: 4px; line-height: 1.5; }
+    .ai-msg-content { word-break: break-word; color: #222; margin-top: 4px; line-height: 1.5; }
+    .ai-msg-content pre { background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 4px; padding: 8px; overflow-x: auto; font-size: 0.9em; }
+    .ai-msg-content code { background: #f0f0f0; padding: 1px 4px; border-radius: 3px; font-size: 0.9em; }
+    .ai-msg-content pre code { background: none; padding: 0; }
+    .ai-msg-content ul { margin: 4px 0; padding-left: 20px; }
+    .ai-msg-content li { margin: 2px 0; }
 
     /* Tool call card */
     .ai-tool-card { margin-top: 4px; border: 1px solid #e0e0e0; border-radius: 4px; overflow: hidden; }
@@ -133,7 +138,7 @@
                 <!-- Assistant / User / Result / Error: show content directly -->
                 <j:if test="${ev.inlineContent}">
                   <span class="ai-badge ai-badge-${ev.category}">${ev.label}</span>
-                  <div class="ai-msg-content">${ev.content}</div>
+                  <div class="ai-msg-content ai-md-src" data-md="${ev.content}"></div>
                 </j:if>
 
                 <!-- Tool call: show name + input preview, click to expand -->
@@ -236,31 +241,31 @@
           <j:if test="${stats.inputTokens > 0}">
             <div class="ai-stats-item">
               <span class="ai-stats-label">Input:</span>
-              <span class="ai-stats-value">${stats.inputTokens} tokens</span>
+              <span class="ai-stats-value">${stats.inputTokensDisplay} tokens</span>
             </div>
           </j:if>
           <j:if test="${stats.outputTokens > 0}">
             <div class="ai-stats-item">
               <span class="ai-stats-label">Output:</span>
-              <span class="ai-stats-value">${stats.outputTokens} tokens</span>
+              <span class="ai-stats-value">${stats.outputTokensDisplay} tokens</span>
             </div>
           </j:if>
           <j:if test="${stats.cacheReadTokens > 0}">
             <div class="ai-stats-item">
               <span class="ai-stats-label">Cache Read:</span>
-              <span class="ai-stats-value">${stats.cacheReadTokens} tokens</span>
+              <span class="ai-stats-value">${stats.cacheReadTokensDisplay} tokens</span>
             </div>
           </j:if>
           <j:if test="${stats.cacheWriteTokens > 0}">
             <div class="ai-stats-item">
               <span class="ai-stats-label">Cache Write:</span>
-              <span class="ai-stats-value">${stats.cacheWriteTokens} tokens</span>
+              <span class="ai-stats-value">${stats.cacheWriteTokensDisplay} tokens</span>
             </div>
           </j:if>
           <j:if test="${stats.reasoningTokens > 0}">
             <div class="ai-stats-item">
               <span class="ai-stats-label">Reasoning:</span>
-              <span class="ai-stats-value">${stats.reasoningTokens} tokens</span>
+              <span class="ai-stats-value">${stats.reasoningTokensDisplay} tokens</span>
             </div>
           </j:if>
           <j:if test="${stats.numTurns > 0}">
@@ -289,6 +294,66 @@
     </div>
   </div>
 
+  <!-- Shared markdown helpers -->
+  <script><![CDATA[
+    var aiAgentMd = (function() {
+      function esc(text) {
+        var d = document.createElement('div');
+        d.appendChild(document.createTextNode(text || ''));
+        return d.innerHTML;
+      }
+      function inlineMd(text) {
+        var s = esc(text);
+        s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+        s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+        s = s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        s = s.replace(/_([^_]+)_/g, '<em>$1</em>');
+        return s;
+      }
+      function mdToHtml(text) {
+        if (!text) return '';
+        var lines = text.split('\n');
+        var out = '', inCode = false, inList = false;
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i];
+          if (line.indexOf('```') === 0) {
+            if (inList) { out += '</ul>'; inList = false; }
+            if (inCode) { out += '</code></pre>'; inCode = false; }
+            else { out += '<pre><code>'; inCode = true; }
+            continue;
+          }
+          if (inCode) { out += esc(line) + '\n'; continue; }
+          var t = line.trim();
+          if (t.indexOf('- ') === 0 || t.indexOf('* ') === 0) {
+            if (!inList) { out += '<ul>'; inList = true; }
+            out += '<li>' + inlineMd(t.substring(2)) + '</li>';
+            continue;
+          }
+          if (inList) { out += '</ul>'; inList = false; }
+          if (t.indexOf('### ') === 0) out += '<strong>' + inlineMd(t.substring(4)) + '</strong><br/>';
+          else if (t.indexOf('## ') === 0) out += '<strong>' + inlineMd(t.substring(3)) + '</strong><br/>';
+          else if (t.indexOf('# ') === 0) out += '<strong>' + inlineMd(t.substring(2)) + '</strong><br/>';
+          else if (t === '---') out += '<hr/>';
+          else if (t === '') out += '<br/>';
+          else out += inlineMd(line) + '<br/>';
+        }
+        if (inCode) out += '</code></pre>';
+        if (inList) out += '</ul>';
+        while (out.length >= 5 && out.substring(out.length - 5) === '<br/>') out = out.substring(0, out.length - 5);
+        return out;
+      }
+      return { esc: esc, mdToHtml: mdToHtml, inlineMd: inlineMd };
+    })();
+    (function() {
+      var elems = document.querySelectorAll('.ai-md-src');
+      for (var i = 0; i < elems.length; i++) {
+        var md = elems[i].getAttribute('data-md');
+        elems[i].innerHTML = aiAgentMd.mdToHtml(md || '');
+      }
+    })();
+  ]]></script>
+
   <!-- JavaScript polling only for live builds -->
   <j:if test="${it.live}">
     <script>
@@ -305,11 +370,8 @@
         var pollInterval = 2000;
         var eventCount = 0;
 
-        function esc(text) {
-          var d = document.createElement('div');
-          d.appendChild(document.createTextNode(text || ''));
-          return d.innerHTML;
-        }
+        var esc = aiAgentMd.esc;
+        var mdToHtml = aiAgentMd.mdToHtml;
 
         function excerpt(text, len) {
           if (!text) return '';
@@ -323,7 +385,7 @@
 
           if (cat === 'assistant' || cat === 'user' || cat === 'result' || cat === 'error') {
             html += '<span class="ai-badge ai-badge-' + cat + '">' + esc(ev.label) + '</span>';
-            html += '<div class="ai-msg-content">' + esc(ev.content) + '</div>';
+            html += '<div class="ai-msg-content">' + mdToHtml(ev.content) + '</div>';
 
           } else if (cat === 'tool_call') {
             html += '<details>';
@@ -401,11 +463,11 @@
           var html = '<div class="ai-stats">';
           if (s.costDisplay) html += '<div class="ai-stats-item"><span class="ai-stats-label">Cost:</span><span class="ai-stats-value ai-stats-cost">' + esc(s.costDisplay) + '</span></div>';
           if (s.durationDisplay) html += '<div class="ai-stats-item"><span class="ai-stats-label">Duration:</span><span class="ai-stats-value ai-stats-duration">' + esc(s.durationDisplay) + '</span></div>';
-          if (s.inputTokens > 0) html += '<div class="ai-stats-item"><span class="ai-stats-label">Input:</span><span class="ai-stats-value">' + s.inputTokens + ' tokens</span></div>';
-          if (s.outputTokens > 0) html += '<div class="ai-stats-item"><span class="ai-stats-label">Output:</span><span class="ai-stats-value">' + s.outputTokens + ' tokens</span></div>';
-          if (s.cacheReadTokens > 0) html += '<div class="ai-stats-item"><span class="ai-stats-label">Cache Read:</span><span class="ai-stats-value">' + s.cacheReadTokens + ' tokens</span></div>';
-          if (s.cacheWriteTokens > 0) html += '<div class="ai-stats-item"><span class="ai-stats-label">Cache Write:</span><span class="ai-stats-value">' + s.cacheWriteTokens + ' tokens</span></div>';
-          if (s.reasoningTokens > 0) html += '<div class="ai-stats-item"><span class="ai-stats-label">Reasoning:</span><span class="ai-stats-value">' + s.reasoningTokens + ' tokens</span></div>';
+          if (s.inputTokens > 0) html += '<div class="ai-stats-item"><span class="ai-stats-label">Input:</span><span class="ai-stats-value">' + s.inputTokens.toLocaleString() + ' tokens</span></div>';
+          if (s.outputTokens > 0) html += '<div class="ai-stats-item"><span class="ai-stats-label">Output:</span><span class="ai-stats-value">' + s.outputTokens.toLocaleString() + ' tokens</span></div>';
+          if (s.cacheReadTokens > 0) html += '<div class="ai-stats-item"><span class="ai-stats-label">Cache Read:</span><span class="ai-stats-value">' + s.cacheReadTokens.toLocaleString() + ' tokens</span></div>';
+          if (s.cacheWriteTokens > 0) html += '<div class="ai-stats-item"><span class="ai-stats-label">Cache Write:</span><span class="ai-stats-value">' + s.cacheWriteTokens.toLocaleString() + ' tokens</span></div>';
+          if (s.reasoningTokens > 0) html += '<div class="ai-stats-item"><span class="ai-stats-label">Reasoning:</span><span class="ai-stats-value">' + s.reasoningTokens.toLocaleString() + ' tokens</span></div>';
           if (s.numTurns > 0) html += '<div class="ai-stats-item"><span class="ai-stats-label">Turns:</span><span class="ai-stats-value">' + s.numTurns + '</span></div>';
           if (s.toolCalls > 0) html += '<div class="ai-stats-item"><span class="ai-stats-label">Tool Calls:</span><span class="ai-stats-value">' + s.toolCalls + '</span></div>';
           html += '</div>';

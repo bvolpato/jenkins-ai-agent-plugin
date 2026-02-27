@@ -1,27 +1,37 @@
 # Jenkins AI Agent Job Plugin
 
 [![CI](https://github.com/brunocvcunha/jenkins-ai-agent-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/brunocvcunha/jenkins-ai-agent-plugin/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Jenkins Plugin](https://img.shields.io/badge/Jenkins-2.479+-blue.svg)](https://www.jenkins.io/)
 
-A Jenkins plugin that adds a native **AI Agent Job** type for running autonomous coding agents as first-class Jenkins builds.
+A Jenkins plugin that adds a native **AI Agent Job** type for running autonomous coding agents
+(Claude Code, Codex CLI, Cursor Agent, OpenCode, Gemini CLI) as first-class Jenkins builds.
 
 ## Features
 
 - **Native job type** — appears in the Jenkins "New Item" dialog alongside Freestyle and Pipeline jobs.
 - **Multiple agent support** — Claude Code, Codex CLI, Cursor Agent, OpenCode, and Gemini CLI.
-- **Inline conversation view** — live-streaming conversation on the build page with structured display of messages, tool calls, and outputs.
+- **Inline conversation view** — live-streaming conversation on the build page with structured display of assistant messages, tool calls with inputs/outputs, and thinking blocks.
+- **Markdown rendering** — assistant and result messages are rendered as formatted HTML.
 - **Approval gates** — optionally pause builds for human review before tool execution.
 - **Usage statistics** — token counts, cost, and duration extracted from agent logs and displayed per build.
-- **Standard Jenkins integrations** — SCM checkout, build triggers, credentials injection, post-build steps, and publishers.
+- **Standard Jenkins integrations** — SCM checkout, build triggers, credentials injection, post-build shell steps, and publishers.
 
 ## Supported Agents
 
 | Agent | Output Format | Cost Tracking |
 |-------|--------------|---------------|
-| Claude Code | stream-json | Yes |
-| Codex CLI | JSON | Tokens only |
-| Cursor Agent | stream-json | Tokens only |
-| OpenCode | JSON | Yes |
-| Gemini CLI | stream-json | Tokens only |
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | stream-json | Full (tokens + cost) |
+| [Codex CLI](https://github.com/openai/codex) | JSON | Tokens only |
+| [Cursor Agent](https://www.cursor.com/) | stream-json | Tokens only |
+| [OpenCode](https://github.com/opencode-ai/opencode) | JSON | Full (tokens + cost) |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | stream-json | Tokens only |
+
+## Screenshot
+
+Build page showing a Cursor Agent conversation with tool calls, markdown-rendered responses, and usage statistics:
+
+![Build page with AI Agent conversation](static/cursor_screenshot.png)
 
 ## Installation
 
@@ -30,7 +40,7 @@ A Jenkins plugin that adds a native **AI Agent Job** type for running autonomous
 3. Upload the `.hpi` file under **Deploy Plugin**.
 4. Restart Jenkins.
 
-## Usage
+## Quick Start
 
 1. Click **New Item**, enter a name, and select **AI Agent Job**.
 2. Configure:
@@ -44,6 +54,8 @@ A Jenkins plugin that adds a native **AI Agent Job** type for running autonomous
    - **Extra CLI args** — append flags to the generated command.
 3. Optionally add SCM, build triggers, post-build steps, and publishers as with any Jenkins job.
 4. Build the job. The conversation streams live on the build page.
+
+## Configuration Reference
 
 ### Environment Variables
 
@@ -66,21 +78,23 @@ When approvals are enabled and YOLO mode is off, tool calls detected in the agen
 
 ### Usage Statistics
 
-After a build completes, a statistics bar shows token usage, cost (when available), and duration. Data is extracted from the agent's own reporting in the JSONL log. The level of detail depends on the agent — Claude Code reports full cost, while others report only token counts.
+After a build completes, a statistics bar shows token usage, cost (when available), and duration. Data is extracted from the agent's own reporting in the JSONL log. The level of detail depends on the agent — Claude Code and OpenCode report full cost, while others report only token counts.
 
 ## Building
 
 Requires Java 17+ and Maven 3.9+.
 
 ```bash
-# Run tests
 mvn clean verify
-
-# Package without tests
-mvn clean package -DskipTests
 ```
 
 The plugin artifact is generated at `target/jenkins-ai-agent-plugin.hpi`.
+
+To package without running tests:
+
+```bash
+mvn clean package -DskipTests
+```
 
 ## Development
 
@@ -98,22 +112,24 @@ The project uses:
 - [SpotBugs](https://spotbugs.github.io/) for static analysis
 - [Jenkins Test Harness](https://github.com/jenkinsci/jenkins-test-harness) for integration tests
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full contribution guidelines.
 
 ## Architecture
 
 ```
 src/main/java/io/jenkins/plugins/aiagentjob/
-├── AiAgentProject.java        # Job type (extends Project)
-├── AiAgentBuild.java          # Build execution logic
-├── AiAgentRunAction.java       # Per-build action: conversation UI, streaming, approvals
-├── AiAgentLogParser.java       # JSONL log parser for all agent formats
-├── AgentUsageStats.java        # Token/cost/duration stats normalization
-├── AgentType.java              # Enum of supported agents with command templates
-├── ExecutionRegistry.java      # In-memory registry for live execution state
-└── AiAgentCredentialInjection.java  # Credential resolution and env injection
+├── AiAgentProject.java             # Job type (extends Project)
+├── AiAgentBuild.java               # Build type binding
+├── AiAgentBuilder.java             # Build step: agent execution
+├── AiAgentRunAction.java           # Per-build action: conversation UI, streaming, approvals
+├── AiAgentLogParser.java           # JSONL log parser for all agent formats
+├── AgentUsageStats.java            # Token/cost/duration stats normalization
+├── AgentType.java                  # Enum of supported agents with command templates
+├── AiAgentCommandFactory.java      # Command-line construction per agent
+├── ExecutionRegistry.java          # In-memory registry for live execution state
+└── AiAgentCredentialInjection.java # Credential resolution and env injection
 ```
 
 ## License
 
-MIT License. See [pom.xml](pom.xml) for details.
+MIT License. See [LICENSE](https://opensource.org/licenses/MIT) for details.

@@ -27,6 +27,7 @@ final class AiAgentLogParser {
             return Collections.emptyList();
         }
         List<EventView> events = new ArrayList<>();
+        String lastAssistantContent = "";
         try (BufferedReader reader =
                 Files.newBufferedReader(rawLogFile.toPath(), StandardCharsets.UTF_8)) {
             String line;
@@ -34,6 +35,28 @@ final class AiAgentLogParser {
             while ((line = reader.readLine()) != null) {
                 idx++;
                 EventView ev = parseLine(idx, line).toEventView();
+                if (ev.isEmpty()) continue;
+
+                if ("assistant".equals(ev.getCategory()) && !ev.getContent().isEmpty()) {
+                    lastAssistantContent = ev.getContent();
+                }
+
+                if ("result".equals(ev.getCategory())
+                        && !ev.getContent().isEmpty()
+                        && !lastAssistantContent.isEmpty()
+                        && ev.getContent().contains(lastAssistantContent)) {
+                    ev =
+                            new EventView(
+                                    ev.getId(),
+                                    ev.getCategory(),
+                                    ev.getLabel(),
+                                    "",
+                                    "",
+                                    "",
+                                    ev.getRawDetails(),
+                                    ev.getTimestamp());
+                }
+
                 if (!ev.isEmpty()) {
                     events.add(ev);
                 }
@@ -748,6 +771,101 @@ final class AiAgentLogParser {
         /** Whether this event is a tool call or tool result. */
         public boolean isToolEvent() {
             return "tool_call".equals(category) || "tool_result".equals(category);
+        }
+
+        /** Returns content converted from markdown to basic HTML for display in Jelly. */
+        public String getContentHtml() {
+            return markdownToHtml(content);
+        }
+
+        static String markdownToHtml(String md) {
+            if (md == null || md.isEmpty()) return "";
+            StringBuilder out = new StringBuilder();
+            String[] lines = md.split("\n", -1);
+            boolean inCodeBlock = false;
+            boolean inList = false;
+
+            for (String line : lines) {
+                if (line.startsWith("```")) {
+                    if (inList) {
+                        out.append("</ul>");
+                        inList = false;
+                    }
+                    if (inCodeBlock) {
+                        out.append("</code></pre>");
+                        inCodeBlock = false;
+                    } else {
+                        out.append("<pre><code>");
+                        inCodeBlock = true;
+                    }
+                    continue;
+                }
+                if (inCodeBlock) {
+                    out.append(escHtml(line)).append('\n');
+                    continue;
+                }
+
+                String trimmed = line.trim();
+
+                if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+                    if (!inList) {
+                        out.append("<ul>");
+                        inList = true;
+                    }
+                    out.append("<li>").append(inlineMarkdown(trimmed.substring(2))).append("</li>");
+                    continue;
+                }
+                if (inList) {
+                    out.append("</ul>");
+                    inList = false;
+                }
+
+                if (trimmed.startsWith("### ")) {
+                    out.append("<strong>")
+                            .append(inlineMarkdown(trimmed.substring(4)))
+                            .append("</strong><br/>");
+                } else if (trimmed.startsWith("## ")) {
+                    out.append("<strong>")
+                            .append(inlineMarkdown(trimmed.substring(3)))
+                            .append("</strong><br/>");
+                } else if (trimmed.startsWith("# ")) {
+                    out.append("<strong>")
+                            .append(inlineMarkdown(trimmed.substring(2)))
+                            .append("</strong><br/>");
+                } else if (trimmed.startsWith("---")) {
+                    out.append("<hr/>");
+                } else if (trimmed.isEmpty()) {
+                    out.append("<br/>");
+                } else {
+                    out.append(inlineMarkdown(line)).append("<br/>");
+                }
+            }
+            if (inCodeBlock) out.append("</code></pre>");
+            if (inList) out.append("</ul>");
+
+            String result = out.toString();
+            while (result.endsWith("<br/>")) {
+                result = result.substring(0, result.length() - 5);
+            }
+            return result;
+        }
+
+        private static String inlineMarkdown(String text) {
+            String s = escHtml(text);
+            s = s.replaceAll("`([^`]+)`", "<code>$1</code>");
+            s = s.replaceAll("\\*\\*([^*]+)\\*\\*", "<strong>$1</strong>");
+            s = s.replaceAll("__([^_]+)__", "<strong>$1</strong>");
+            s = s.replaceAll("\\*([^*]+)\\*", "<em>$1</em>");
+            s = s.replaceAll("_([^_]+)_", "<em>$1</em>");
+            return s;
+        }
+
+        private static String escHtml(String text) {
+            if (text == null) return "";
+            return text.replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
+                    .replace("\"", "&quot;");
         }
     }
 }

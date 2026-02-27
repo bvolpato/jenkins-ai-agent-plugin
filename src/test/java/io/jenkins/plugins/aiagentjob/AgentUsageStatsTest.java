@@ -227,4 +227,52 @@ public class AgentUsageStatsTest {
         stats.extractFrom(json);
         assertEquals(9999, stats.getTotalTokens());
     }
+
+    // ======================== Formatted display ========================
+
+    @Test
+    public void formattedTokens_haveCommaSeparators() throws IOException {
+        AgentUsageStats stats = AgentUsageStats.fromLogFile(fixtureFile("stats-cursor.jsonl"));
+        assertEquals("103,854", stats.getInputTokensDisplay());
+        assertEquals("1,583", stats.getOutputTokensDisplay());
+        assertEquals("90,357", stats.getCacheReadTokensDisplay());
+        assertEquals("13,489", stats.getCacheWriteTokensDisplay());
+    }
+
+    @Test
+    public void formattedTokens_smallNumbersNoComma() {
+        AgentUsageStats stats = new AgentUsageStats();
+        JSONObject json =
+                JSONObject.fromObject(
+                        "{\"type\":\"result\",\"usage\":{\"input_tokens\":42,\"output_tokens\":5}}");
+        stats.extractFrom(json);
+        assertEquals("42", stats.getInputTokensDisplay());
+        assertEquals("5", stats.getOutputTokensDisplay());
+    }
+
+    // ======================== Model detection ========================
+
+    @Test
+    public void detectsModel_fromSystemInit() throws IOException {
+        AgentUsageStats stats = AgentUsageStats.fromLogFile(fixtureFile("stats-claude-code.jsonl"));
+        assertEquals("claude-test-4", stats.getDetectedModel());
+    }
+
+    @Test
+    public void detectsModel_fromGeminiInit() throws IOException {
+        AgentUsageStats stats = AgentUsageStats.fromLogFile(fixtureFile("stats-gemini.jsonl"));
+        assertEquals("gemini-test-pro", stats.getDetectedModel());
+    }
+
+    @Test
+    public void detectsModel_fromCursorInit() throws IOException {
+        AgentUsageStats stats = AgentUsageStats.fromLogFile(fixtureFile("stats-cursor.jsonl"));
+        assertEquals("test-model-4", stats.getDetectedModel());
+    }
+
+    @Test
+    public void detectsModel_emptyWhenNoInit() throws IOException {
+        AgentUsageStats stats = AgentUsageStats.fromLogFile(fixtureFile("stats-codex.jsonl"));
+        assertEquals("", stats.getDetectedModel());
+    }
 }

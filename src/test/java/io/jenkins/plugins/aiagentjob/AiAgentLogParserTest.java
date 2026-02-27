@@ -460,4 +460,122 @@ public class AiAgentLogParserTest {
         List<AiAgentLogParser.EventView> events = parseFixture("opencode-conversation.jsonl");
         assertTrue("Should have at least 5 events", events.size() >= 5);
     }
+
+    // ======================== Markdown rendering ========================
+
+    @Test
+    public void contentHtml_convertsBasicMarkdown() {
+        AiAgentLogParser.EventView ev =
+                new AiAgentLogParser.EventView(
+                        1,
+                        "assistant",
+                        "Assistant",
+                        "Hello **world**!",
+                        "",
+                        "",
+                        "{}",
+                        java.time.Instant.now());
+        String html = ev.getContentHtml();
+        assertTrue("Should contain <strong>", html.contains("<strong>world</strong>"));
+    }
+
+    @Test
+    public void contentHtml_convertsCodeBlocks() {
+        String md = "Here:\n```\nfoo()\n```\nDone.";
+        String html = AiAgentLogParser.EventView.markdownToHtml(md);
+        assertTrue("Should contain <pre><code>", html.contains("<pre><code>"));
+        assertTrue("Should contain foo()", html.contains("foo()"));
+    }
+
+    @Test
+    public void contentHtml_convertsBulletLists() {
+        String md = "Items:\n- one\n- two\n- three";
+        String html = AiAgentLogParser.EventView.markdownToHtml(md);
+        assertTrue("Should contain <ul>", html.contains("<ul>"));
+        assertTrue("Should contain <li>one</li>", html.contains("<li>one</li>"));
+    }
+
+    @Test
+    public void contentHtml_convertsHeaders() {
+        String md = "# Title\n## Subtitle";
+        String html = AiAgentLogParser.EventView.markdownToHtml(md);
+        assertTrue("Should contain strong for title", html.contains("<strong>Title</strong>"));
+        assertTrue(
+                "Should contain strong for subtitle", html.contains("<strong>Subtitle</strong>"));
+    }
+
+    @Test
+    public void contentHtml_escapesHtmlInContent() {
+        String md = "Use <div> tags & \"quotes\"";
+        String html = AiAgentLogParser.EventView.markdownToHtml(md);
+        assertTrue("Should escape <", html.contains("&lt;div&gt;"));
+        assertTrue("Should escape &", html.contains("&amp;"));
+    }
+
+    @Test
+    public void contentHtml_handlesEmptyString() {
+        assertEquals("", AiAgentLogParser.EventView.markdownToHtml(""));
+        assertEquals("", AiAgentLogParser.EventView.markdownToHtml(null));
+    }
+
+    @Test
+    public void contentHtml_convertsInlineCode() {
+        String md = "Run `echo hello` now";
+        String html = AiAgentLogParser.EventView.markdownToHtml(md);
+        assertTrue("Should contain <code>", html.contains("<code>echo hello</code>"));
+    }
+
+    // ======================== Result deduplication ========================
+
+    @Test
+    public void parse_deduplicatesResultThatRepeatsAssistant() throws IOException {
+        File temp = File.createTempFile("dedup-", ".jsonl");
+        temp.deleteOnExit();
+        java.nio.file.Files.write(
+                temp.toPath(),
+                java.util.Arrays.asList(
+                        "{\"type\":\"assistant\",\"message\":{\"role\":\"assistant\",\"content\":"
+                                + "[{\"type\":\"text\",\"text\":\"The answer is 42.\"}]}}",
+                        "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,"
+                                + "\"duration_ms\":5000,\"result\":\"Some preamble.The answer is 42.\"}"));
+        List<AiAgentLogParser.EventView> events = AiAgentLogParser.parse(temp);
+
+        AiAgentLogParser.EventView assistant =
+                events.stream()
+                        .filter(e -> "assistant".equals(e.getCategory()))
+                        .findFirst()
+                        .orElse(null);
+        assertNotNull("Should have assistant event", assistant);
+        assertEquals("The answer is 42.", assistant.getContent());
+
+        AiAgentLogParser.EventView result =
+                events.stream()
+                        .filter(e -> "result".equals(e.getCategory()))
+                        .findFirst()
+                        .orElse(null);
+        assertNotNull("Should have result event", result);
+        assertTrue("Result content should be empty (deduplicated)", result.getContent().isEmpty());
+    }
+
+    @Test
+    public void parse_keepsResultWhenDifferentFromAssistant() throws IOException {
+        File temp = File.createTempFile("nodedup-", ".jsonl");
+        temp.deleteOnExit();
+        java.nio.file.Files.write(
+                temp.toPath(),
+                java.util.Arrays.asList(
+                        "{\"type\":\"assistant\",\"message\":{\"role\":\"assistant\",\"content\":"
+                                + "[{\"type\":\"text\",\"text\":\"Hello!\"}]}}",
+                        "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,"
+                                + "\"duration_ms\":1000,\"result\":\"Completely different result.\"}"));
+        List<AiAgentLogParser.EventView> events = AiAgentLogParser.parse(temp);
+
+        AiAgentLogParser.EventView result =
+                events.stream()
+                        .filter(e -> "result".equals(e.getCategory()))
+                        .findFirst()
+                        .orElse(null);
+        assertNotNull("Should have result event", result);
+        assertEquals("Completely different result.", result.getContent());
+    }
 }

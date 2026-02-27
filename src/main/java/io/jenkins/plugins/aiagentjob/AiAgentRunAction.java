@@ -112,6 +112,12 @@ public class AiAgentRunAction implements Action, RunAction2 {
     }
 
     public String getModel() {
+        if (model != null && !model.isEmpty()) return model;
+        try {
+            String detected = AgentUsageStats.fromLogFile(getRawLogFile()).getDetectedModel();
+            if (!detected.isEmpty()) return detected;
+        } catch (IOException ignored) {
+        }
         return model;
     }
 

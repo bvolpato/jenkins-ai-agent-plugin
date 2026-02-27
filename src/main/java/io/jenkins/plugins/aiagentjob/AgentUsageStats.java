@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.text.NumberFormat;
 import java.util.Locale;
 
 /**
@@ -29,6 +30,7 @@ public final class AgentUsageStats implements Serializable {
     private long apiDurationMs;
     private int numTurns;
     private int toolCalls;
+    private String detectedModel = "";
 
     public long getInputTokens() {
         return inputTokens;
@@ -90,6 +92,40 @@ public final class AgentUsageStats implements Serializable {
         return toolCalls;
     }
 
+    /** Model name detected from system init or result lines, empty if not found. */
+    public String getDetectedModel() {
+        return detectedModel;
+    }
+
+    /** Formats a token count with comma grouping (e.g., "103,854"). */
+    public String getInputTokensDisplay() {
+        return formatNumber(inputTokens);
+    }
+
+    public String getOutputTokensDisplay() {
+        return formatNumber(outputTokens);
+    }
+
+    public String getCacheReadTokensDisplay() {
+        return formatNumber(cacheReadTokens);
+    }
+
+    public String getCacheWriteTokensDisplay() {
+        return formatNumber(cacheWriteTokens);
+    }
+
+    public String getTotalTokensDisplay() {
+        return formatNumber(getTotalTokens());
+    }
+
+    public String getReasoningTokensDisplay() {
+        return formatNumber(reasoningTokens);
+    }
+
+    private static String formatNumber(long value) {
+        return NumberFormat.getIntegerInstance(Locale.US).format(value);
+    }
+
     /** Returns true if any meaningful data was extracted. */
     public boolean hasData() {
         return inputTokens > 0
@@ -127,12 +163,17 @@ public final class AgentUsageStats implements Serializable {
     void extractFrom(JSONObject json) {
         String type = json.optString("type", "").toLowerCase(Locale.ROOT);
 
-        // Claude Code: "result" type with top-level usage and total_cost_usd
+        if ("system".equals(type) || "init".equals(type)) {
+            String model = json.optString("model", "").trim();
+            if (!model.isEmpty() && detectedModel.isEmpty()) {
+                detectedModel = model;
+            }
+        }
+
         if ("result".equals(type)) {
             extractClaudeResult(json);
         }
 
-        // Claude Code: "assistant" type may have usage in message
         if ("assistant".equals(type)) {
             JSONObject message = json.optJSONObject("message");
             if (message != null) {
