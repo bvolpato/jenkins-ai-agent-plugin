@@ -43,18 +43,13 @@ final class AiAgentCommandFactory {
                 command.add("codex");
                 command.add("exec");
                 command.add("--json");
+                command.add("--skip-git-repo-check");
                 if (project.isYoloMode()) {
                     command.add("--dangerously-bypass-approvals-and-sandbox");
                 } else {
                     command.add("--sandbox");
                     command.add("workspace-write");
-                    if (project.isRequireApprovals()) {
-                        command.add("--ask-for-approval");
-                        command.add("on-request");
-                    } else {
-                        command.add("--ask-for-approval");
-                        command.add("never");
-                    }
+                    command.add("--full-auto");
                 }
                 if (model != null) {
                     command.add("--model");
@@ -64,10 +59,11 @@ final class AiAgentCommandFactory {
                 break;
 
             case CURSOR_AGENT:
-                command.add("cursor-agent");
+                command.add("agent");
                 command.add("-p");
                 command.add("--output-format=stream-json");
                 command.add("--trust");
+                command.add("--approve-mcps");
                 if (project.isYoloMode()) {
                     command.add("--yolo");
                 }

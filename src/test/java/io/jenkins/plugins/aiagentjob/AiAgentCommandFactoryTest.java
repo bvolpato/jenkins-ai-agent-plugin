@@ -96,6 +96,9 @@ public class AiAgentCommandFactoryTest {
         assertEquals("codex", cmd.get(0));
         assertEquals("exec", cmd.get(1));
         assertTrue("Should have --json for JSONL output", cmd.contains("--json"));
+        assertTrue(
+                "Should have --skip-git-repo-check for CI environments",
+                cmd.contains("--skip-git-repo-check"));
         assertTrue("Should have prompt at end", cmd.contains("fix the bug"));
     }
 
@@ -110,35 +113,22 @@ public class AiAgentCommandFactoryTest {
                 "Should have --dangerously-bypass-approvals-and-sandbox",
                 cmd.contains("--dangerously-bypass-approvals-and-sandbox"));
         assertFalse("Should NOT have --sandbox", cmd.contains("--sandbox"));
+        assertFalse("Should NOT have --full-auto in yolo mode", cmd.contains("--full-auto"));
     }
 
     @Test
-    public void codex_defaultMode_noApprovals() {
+    public void codex_defaultMode() {
         AiAgentProject project = createProject(AgentType.CODEX);
         project.setYoloMode(false);
-        project.setRequireApprovals(false);
 
         List<String> cmd = AiAgentCommandFactory.buildDefaultCommand(project, "test");
 
         assertTrue("Should have --sandbox", cmd.contains("--sandbox"));
         assertTrue("Should have workspace-write", cmd.contains("workspace-write"));
-        int approvalIdx = cmd.indexOf("--ask-for-approval");
-        assertTrue("Should have --ask-for-approval", approvalIdx >= 0);
-        assertEquals("never", cmd.get(approvalIdx + 1));
-    }
-
-    @Test
-    public void codex_withApprovals() {
-        AiAgentProject project = createProject(AgentType.CODEX);
-        project.setRequireApprovals(true);
-
-        List<String> cmd = AiAgentCommandFactory.buildDefaultCommand(project, "test");
-
-        assertTrue("Should have --sandbox", cmd.contains("--sandbox"));
-        assertTrue("Should have workspace-write", cmd.contains("workspace-write"));
-        int approvalIdx = cmd.indexOf("--ask-for-approval");
-        assertTrue("Should have --ask-for-approval", approvalIdx >= 0);
-        assertEquals("on-request", cmd.get(approvalIdx + 1));
+        assertTrue("Should have --full-auto for headless execution", cmd.contains("--full-auto"));
+        assertFalse(
+                "Should NOT have --ask-for-approval (not valid for codex exec)",
+                cmd.contains("--ask-for-approval"));
     }
 
     @Test
@@ -170,12 +160,13 @@ public class AiAgentCommandFactoryTest {
 
         List<String> cmd = AiAgentCommandFactory.buildDefaultCommand(project, "analyze code");
 
-        assertEquals("cursor-agent", cmd.get(0));
+        assertEquals("agent", cmd.get(0));
         assertTrue("Should have -p for print mode", cmd.contains("-p"));
         assertTrue(
                 "Should have --output-format=stream-json",
                 cmd.contains("--output-format=stream-json"));
         assertTrue("Should have --trust for headless mode", cmd.contains("--trust"));
+        assertTrue("Should have --approve-mcps for headless mode", cmd.contains("--approve-mcps"));
         assertTrue("Should have prompt", cmd.contains("analyze code"));
     }
 
