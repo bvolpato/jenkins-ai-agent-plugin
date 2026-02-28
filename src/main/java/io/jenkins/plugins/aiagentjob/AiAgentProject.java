@@ -49,6 +49,7 @@ public class AiAgentProject extends FreeStyleProject {
     private String extraArgs = "";
     private String environmentVariables = "";
     private boolean failOnAgentError = true;
+    private String setupScript = "";
     private String apiCredentialsId = "";
     private String apiKeyEnvVar = "";
 
@@ -94,6 +95,7 @@ public class AiAgentProject extends FreeStyleProject {
         this.commandOverride = Util.fixNull(json.optString("commandOverride", ""));
         this.extraArgs = Util.fixNull(json.optString("extraArgs", ""));
         this.environmentVariables = Util.fixNull(json.optString("environmentVariables", ""));
+        this.setupScript = Util.fixNull(json.optString("setupScript", ""));
         this.failOnAgentError = json.optBoolean("failOnAgentError", true);
         this.apiCredentialsId = Util.fixNull(json.optString("apiCredentialsId", ""));
         this.apiKeyEnvVar = Util.fixNull(json.optString("apiKeyEnvVar", ""));
@@ -182,6 +184,18 @@ public class AiAgentProject extends FreeStyleProject {
         this.environmentVariables = Util.fixNull(environmentVariables);
     }
 
+    /**
+     * Shell script executed before the agent process to prepare the build environment (install
+     * dependencies, source dotfiles, configure PATH, etc.).
+     */
+    public String getSetupScript() {
+        return setupScript;
+    }
+
+    public void setSetupScript(String setupScript) {
+        this.setupScript = Util.fixNull(setupScript);
+    }
+
     public boolean isFailOnAgentError() {
         return failOnAgentError;
     }
@@ -243,6 +257,9 @@ public class AiAgentProject extends FreeStyleProject {
         }
         if (environmentVariables == null) {
             environmentVariables = "";
+        }
+        if (setupScript == null) {
+            setupScript = "";
         }
         if (apiCredentialsId == null) {
             apiCredentialsId = "";

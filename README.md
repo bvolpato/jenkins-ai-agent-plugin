@@ -49,11 +49,19 @@ Build page showing a Cursor Agent conversation with tool calls, markdown-rendere
    - **Model** — optional model override (e.g., `claude-sonnet-4`).
    - **YOLO mode** — skip confirmation prompts in the agent.
    - **Approvals** — require human approval for tool calls.
+   - **Setup script** — shell commands to run before the agent (install tools, source dotfiles, export secrets).
    - **Environment variables** — inject additional env vars (`KEY=VALUE`, one per line).
    - **Command override** — replace the default command template entirely.
    - **Extra CLI args** — append flags to the generated command.
 3. Optionally add SCM, build triggers, post-build steps, and publishers as with any Jenkins job.
 4. Build the job. The conversation streams live on the build page.
+
+### Pinning a Node.js Version
+
+Some agents (Claude Code, Gemini CLI) are installed via `npx` and require Node.js on the build agent.
+To lock a specific Node.js version across builds, use the [NodeJS Plugin](https://plugins.jenkins.io/nodejs/).
+Configure a NodeJS installation in **Manage Jenkins > Tools**, then select it in the job's build environment
+so that `node` and `npx` resolve to the pinned version.
 
 ## Configuration Reference
 
@@ -67,6 +75,24 @@ The plugin injects these variables into every build:
 | `AI_AGENT_MODEL` | The configured model name |
 | `AI_AGENT_JOB` | The Jenkins job name |
 | `AI_AGENT_BUILD_NUMBER` | The build number |
+
+### Setup Script
+
+The **Setup script** field accepts shell commands that run before the agent process starts.
+Use it to prepare the build environment — install dependencies, source dotfiles, configure PATH,
+or export secrets that the agent needs at runtime.
+
+```bash
+# Example: add local binaries to PATH, source nvm, install a CLI tool
+export PATH="$HOME/.local/bin:$PATH"
+source "$HOME/.nvm/nvm.sh"
+nvm use 22
+npm install -g @anthropic-ai/claude-code
+```
+
+The script runs via `/bin/sh -le` (login shell, exit on error) in the configured working directory
+with the same environment variables as the agent. If the script exits with a non-zero code the
+build fails immediately without launching the agent.
 
 ### Credential Injection
 

@@ -110,6 +110,19 @@ final class AiAgentExecutor {
         extraEnv.put("AI_AGENT_JOB", build.getProject().getFullName());
         extraEnv.put("AI_AGENT_BUILD_NUMBER", String.valueOf(build.getNumber()));
 
+        String setupScript = Util.replaceMacro(Util.fixNull(project.getSetupScript()), env).trim();
+        if (!setupScript.isEmpty()) {
+            listener.getLogger().println("[ai-agent] Running setup script...");
+            int setupExit = runShellScript(launcher, runDirectory, extraEnv, setupScript, listener);
+            if (setupExit != 0) {
+                listener.getLogger()
+                        .println("[ai-agent] Setup script failed with exit code: " + setupExit);
+                action.markCompleted(setupExit);
+                return setupExit;
+            }
+            listener.getLogger().println("[ai-agent] Setup script completed.");
+        }
+
         List<String> command;
         if (!commandOverride.isEmpty()) {
             if (launcher.isUnix()) {
@@ -170,6 +183,33 @@ final class AiAgentExecutor {
         }
         action.markCompleted(exitCode);
         return exitCode;
+    }
+
+    private static int runShellScript(
+            Launcher launcher,
+            FilePath runDirectory,
+            Map<String, String> extraEnv,
+            String script,
+            BuildListener listener)
+            throws IOException, InterruptedException {
+        FilePath tempScript = runDirectory.createTextTempFile("ai-agent-setup", ".sh", script);
+        try {
+            List<String> cmd;
+            if (launcher.isUnix()) {
+                cmd = List.of("/bin/sh", "-le", tempScript.getRemote());
+            } else {
+                cmd = List.of("cmd", "/c", tempScript.getRemote());
+            }
+            return launcher.launch()
+                    .cmds(cmd)
+                    .pwd(runDirectory)
+                    .envs(extraEnv)
+                    .stdout(listener)
+                    .stderr(listener.getLogger())
+                    .join();
+        } finally {
+            tempScript.delete();
+        }
     }
 
     private static FilePath resolveRunDirectory(FilePath workspace, String workDirValue) {

@@ -55,6 +55,15 @@
       </f:description>
     </f:entry>
 
+    <f:entry title="Setup script" field="setupScript">
+      <f:textarea name="setupScript" value="${it.setupScript}" />
+      <f:description>
+        Shell commands executed before the agent starts (e.g. source dotfiles,
+        install tools, configure PATH, export secrets). Runs via /bin/sh -le on
+        Unix or cmd /c on Windows. Leave empty to skip.
+      </f:description>
+    </f:entry>
+
     <f:advanced>
       <f:entry title="API Key env var override" field="apiKeyEnvVar">
         <f:textbox name="apiKeyEnvVar" value="${it.apiKeyEnvVar}" />

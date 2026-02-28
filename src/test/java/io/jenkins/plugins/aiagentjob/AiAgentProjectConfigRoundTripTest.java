@@ -24,6 +24,7 @@ public class AiAgentProjectConfigRoundTripTest {
         project.setCommandOverride("echo '{\"type\":\"assistant\",\"message\":\"hi\"}'");
         project.setExtraArgs("--foo bar");
         project.setEnvironmentVariables("FOO=bar\nHELLO=world");
+        project.setSetupScript("export PATH=$HOME/.local/bin:$PATH\nnpm install");
         project.setFailOnAgentError(false);
         project.save();
 
@@ -40,6 +41,7 @@ public class AiAgentProjectConfigRoundTripTest {
                 "echo '{\"type\":\"assistant\",\"message\":\"hi\"}'", project.getCommandOverride());
         assertEquals("--foo bar", project.getExtraArgs());
         assertEquals("FOO=bar\nHELLO=world", project.getEnvironmentVariables());
+        assertEquals("export PATH=$HOME/.local/bin:$PATH\nnpm install", project.getSetupScript());
         assertFalse(project.isFailOnAgentError());
     }
 }
