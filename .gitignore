@@ -37,3 +37,6 @@ Thumbs.db
 
 # Build artifacts
 build-*.log
+
+# Local agent instructions (not committed)
+AGENTS.local.md
