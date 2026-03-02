@@ -139,6 +139,37 @@ public class AiAgentBuildExecutionTest {
     }
 
     @Test
+    public void codexCustomConfig_createsRunScopedCodexHome() throws Exception {
+        Assume.assumeTrue(File.pathSeparatorChar == ':');
+
+        AiAgentProject project = jenkins.createProject(AiAgentProject.class, "ai-build-codex-cfg");
+        project.setAgentType(AgentType.CODEX);
+        project.setPrompt("hello");
+        project.setCodexCustomConfigEnabled(true);
+        project.setCodexCustomConfigToml("[mcp_servers.demo]\ncommand = \"npx\"");
+        project.setCommandOverride(
+                "cfg=\"$USERPROFILE/.codex/config.toml\"; "
+                        + "if test -f \"$cfg\"; then echo CODEX_CONFIG_FOUND; sed -n '1,200p' \"$cfg\"; "
+                        + "else echo CODEX_CONFIG_MISSING home=$HOME userprofile=$USERPROFILE; fi; "
+                        + "echo '{\"type\":\"assistant\",\"message\":\"done\"}'");
+        project.setFailOnAgentError(true);
+        project.save();
+
+        FreeStyleBuild build = jenkins.buildAndAssertSuccess(project);
+        AiAgentRunAction action = build.getAction(AiAgentRunAction.class);
+        assertNotNull(action);
+        String log = new String(java.nio.file.Files.readAllBytes(action.getRawLogFile().toPath()));
+        assertTrue(
+                "Codex config should be found in the run-scoped home",
+                log.contains("CODEX_CONFIG_FOUND"));
+        assertTrue(
+                "Codex config should be written to run-scoped home",
+                log.contains("[mcp_servers.demo]"));
+        assertTrue("Codex config should preserve TOML content", log.contains("command = \"npx\""));
+        assertFalse("Codex config should not be missing", log.contains("CODEX_CONFIG_MISSING"));
+    }
+
+    @Test
     public void failsWhenApprovalTimesOut() throws Exception {
         Assume.assumeTrue(File.pathSeparatorChar == ':');
 

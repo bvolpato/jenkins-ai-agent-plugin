@@ -25,6 +25,8 @@ public class AiAgentProjectConfigRoundTripTest {
         project.setExtraArgs("--foo bar");
         project.setEnvironmentVariables("FOO=bar\nHELLO=world");
         project.setSetupScript("export PATH=$HOME/.local/bin:$PATH\nnpm install");
+        project.setCodexCustomConfigEnabled(true);
+        project.setCodexCustomConfigToml("[mcp_servers.demo]\ncommand = \"npx\"");
         project.setFailOnAgentError(false);
         project.save();
 
@@ -42,6 +44,8 @@ public class AiAgentProjectConfigRoundTripTest {
         assertEquals("--foo bar", project.getExtraArgs());
         assertEquals("FOO=bar\nHELLO=world", project.getEnvironmentVariables());
         assertEquals("export PATH=$HOME/.local/bin:$PATH\nnpm install", project.getSetupScript());
+        assertTrue(project.isCodexCustomConfigEnabled());
+        assertEquals("[mcp_servers.demo]\ncommand = \"npx\"", project.getCodexCustomConfigToml());
         assertFalse(project.isFailOnAgentError());
     }
 }

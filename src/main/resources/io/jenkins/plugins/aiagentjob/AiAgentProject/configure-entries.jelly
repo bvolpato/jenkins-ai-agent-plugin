@@ -65,6 +65,22 @@
       </f:description>
     </f:entry>
 
+    <f:entry title="Use custom Codex config.toml" field="codexCustomConfigEnabled">
+      <f:checkbox name="codexCustomConfigEnabled" checked="${it.codexCustomConfigEnabled}" />
+      <f:description>
+        Only used when Agent Type is Codex CLI. When enabled, this writes a
+        run-scoped <code>~/.codex/config.toml</code> for the build so settings/MCP can be
+        overridden per job.
+      </f:description>
+    </f:entry>
+
+    <f:entry title="Custom Codex config.toml" field="codexCustomConfigToml">
+      <f:textarea name="codexCustomConfigToml" value="${it.codexCustomConfigToml}" />
+      <f:description>
+        TOML content equivalent to <code>~/.codex/config.toml</code>.
+      </f:description>
+    </f:entry>
+
     <f:advanced>
       <f:entry title="API Key env var override" field="apiKeyEnvVar">
         <f:textbox name="apiKeyEnvVar" value="${it.apiKeyEnvVar}" />
@@ -102,4 +118,5 @@
   <p:config-builders />
   <p:config-buildWrappers />
   <p:config-publishers2 />
+
 </j:jelly>

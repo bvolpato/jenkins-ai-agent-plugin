@@ -113,6 +113,17 @@ final class AiAgentExecutor {
         extraEnv.put("AI_AGENT_BUILD_NUMBER", String.valueOf(build.getNumber()));
 
         String setupScript = Util.replaceMacro(Util.fixNull(project.getSetupScript()), env).trim();
+        FilePath tempCodexHome = null;
+
+        if (project.getAgentType() == AgentType.CODEX && project.isCodexCustomConfigEnabled()) {
+            tempCodexHome = prepareCodexHome(workspace, project.getCodexCustomConfigToml());
+            String codexHome = tempCodexHome.getRemote();
+            extraEnv.put("HOME", codexHome);
+            extraEnv.put("USERPROFILE", codexHome);
+            listener.getLogger()
+                    .println(
+                            "[ai-agent] Using job-scoped Codex config.toml from project configuration.");
+        }
 
         List<String> agentCommand;
         if (!commandOverride.isEmpty()) {
@@ -129,7 +140,8 @@ final class AiAgentExecutor {
             command = buildShellCommand(setupScript, tempSetupScript);
         } else if (!commandOverride.isEmpty()) {
             if (launcher.isUnix()) {
-                command = List.of("/bin/sh", "-lc", commandOverride);
+                // Use a non-login shell so injected HOME/USERPROFILE are not overridden.
+                command = List.of("/bin/sh", "-c", commandOverride);
             } else {
                 command = List.of("cmd", "/c", commandOverride);
             }
@@ -193,6 +205,16 @@ final class AiAgentExecutor {
                                             + e.getMessage());
                 }
             }
+            if (tempCodexHome != null) {
+                try {
+                    tempCodexHome.deleteRecursive();
+                } catch (Exception e) {
+                    listener.getLogger()
+                            .println(
+                                    "[ai-agent] Warning: could not delete temporary Codex home: "
+                                            + e.getMessage());
+                }
+            }
         }
 
         if (outputHandler.wasDeniedByApproval()) {
@@ -238,6 +260,23 @@ final class AiAgentExecutor {
         FilePath tempScript = tempDir.createTextTempFile("ai-agent-setup", ".sh", combinedScript);
         tempScript.chmod(0755);
         return tempScript;
+    }
+
+    /**
+     * Creates a temporary HOME/USERPROFILE directory with a run-scoped ~/.codex/config.toml for
+     * Codex jobs that opt into custom configuration.
+     */
+    private static FilePath prepareCodexHome(FilePath workspace, String codexConfigToml)
+            throws IOException, InterruptedException {
+        FilePath tempDir =
+                new FilePath(
+                        workspace.getChannel(),
+                        new File(System.getProperty("java.io.tmpdir")).getAbsolutePath());
+        FilePath homeDir = tempDir.child("ai-agent-codex-home-" + System.nanoTime());
+        FilePath codexDir = homeDir.child(".codex");
+        codexDir.mkdirs();
+        codexDir.child("config.toml").write(Util.fixNull(codexConfigToml), "UTF-8");
+        return homeDir;
     }
 
     /**

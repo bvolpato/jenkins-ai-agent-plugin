@@ -15,6 +15,7 @@ A Jenkins plugin that adds a native **AI Agent Job** type for running autonomous
 - **Markdown rendering** — assistant and result messages are rendered as formatted HTML.
 - **Approval gates** — optionally pause builds for human review before tool execution.
 - **Usage statistics** — token counts, cost, and duration extracted from agent logs and displayed per build.
+- **Codex per-job config** — optionally provide a job-scoped `~/.codex/config.toml` to override settings/MCP for Codex runs.
 - **Standard Jenkins integrations** — SCM checkout, build triggers, credentials injection, post-build shell steps, and publishers.
 
 ## Supported Agents
@@ -50,6 +51,7 @@ Build page showing a Cursor Agent conversation with tool calls, markdown-rendere
    - **YOLO mode** — skip confirmation prompts in the agent.
    - **Approvals** — require human approval for tool calls.
    - **Setup script** — shell commands to run before the agent (install tools, source dotfiles, export secrets).
+   - **Custom Codex config.toml** — optional, for Codex jobs to override settings/MCP per job.
    - **Environment variables** — inject additional env vars (`KEY=VALUE`, one per line).
    - **Command override** — replace the default command template entirely.
    - **Extra CLI args** — append flags to the generated command.
@@ -95,6 +97,13 @@ variables, PATH changes, or sourced dotfiles are available to the agent. Support
 lines (e.g. `#!/bin/zsh`) just like the Jenkins Shell build step — if no shebang is present,
 `/bin/sh -xe` is used. If the script exits with a non-zero code the build fails immediately
 without launching the agent.
+
+### Codex Job-Scoped config.toml
+
+For **Codex CLI** jobs, you can enable a custom config and paste TOML content equivalent to
+`~/.codex/config.toml`. At runtime, the plugin creates a temporary home directory for the build,
+writes `.codex/config.toml` there, and launches Codex with that run-scoped home so settings/MCP
+overrides apply only to that job run.
 
 ### Credential Injection
 

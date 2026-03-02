@@ -50,6 +50,8 @@ public class AiAgentProject extends FreeStyleProject {
     private String environmentVariables = "";
     private boolean failOnAgentError = true;
     private String setupScript = "";
+    private boolean codexCustomConfigEnabled;
+    private String codexCustomConfigToml = "";
     private String apiCredentialsId = "";
     private String apiKeyEnvVar = "";
 
@@ -96,6 +98,9 @@ public class AiAgentProject extends FreeStyleProject {
         this.extraArgs = Util.fixNull(json.optString("extraArgs", ""));
         this.environmentVariables = Util.fixNull(json.optString("environmentVariables", ""));
         this.setupScript = Util.fixNull(json.optString("setupScript", ""));
+        this.codexCustomConfigEnabled =
+                parseBooleanFormValue(json, "codexCustomConfigEnabled", false);
+        this.codexCustomConfigToml = Util.fixNull(json.optString("codexCustomConfigToml", ""));
         this.failOnAgentError = json.optBoolean("failOnAgentError", true);
         this.apiCredentialsId = Util.fixNull(json.optString("apiCredentialsId", ""));
         this.apiKeyEnvVar = Util.fixNull(json.optString("apiKeyEnvVar", ""));
@@ -196,6 +201,27 @@ public class AiAgentProject extends FreeStyleProject {
         this.setupScript = Util.fixNull(setupScript);
     }
 
+    /**
+     * When enabled for Codex jobs, the plugin writes a job-scoped ~/.codex/config.toml for this
+     * build and points HOME/USERPROFILE to it.
+     */
+    public boolean isCodexCustomConfigEnabled() {
+        return codexCustomConfigEnabled;
+    }
+
+    public void setCodexCustomConfigEnabled(boolean codexCustomConfigEnabled) {
+        this.codexCustomConfigEnabled = codexCustomConfigEnabled;
+    }
+
+    /** Raw TOML content used to generate ~/.codex/config.toml for Codex builds. */
+    public String getCodexCustomConfigToml() {
+        return codexCustomConfigToml;
+    }
+
+    public void setCodexCustomConfigToml(String codexCustomConfigToml) {
+        this.codexCustomConfigToml = Util.fixNull(codexCustomConfigToml);
+    }
+
     public boolean isFailOnAgentError() {
         return failOnAgentError;
     }
@@ -261,6 +287,9 @@ public class AiAgentProject extends FreeStyleProject {
         if (setupScript == null) {
             setupScript = "";
         }
+        if (codexCustomConfigToml == null) {
+            codexCustomConfigToml = "";
+        }
         if (apiCredentialsId == null) {
             apiCredentialsId = "";
         }
@@ -268,6 +297,37 @@ public class AiAgentProject extends FreeStyleProject {
             apiKeyEnvVar = "";
         }
         return this;
+    }
+
+    /**
+     * Parses checkbox-like form values that may arrive as booleans or strings (for example "on").
+     */
+    private static boolean parseBooleanFormValue(
+            JSONObject json, String key, boolean defaultValue) {
+        Object raw = json.opt(key);
+        if (raw == null) {
+            return defaultValue;
+        }
+        if (raw instanceof Boolean) {
+            return ((Boolean) raw).booleanValue();
+        }
+        if (raw instanceof String) {
+            String normalized = ((String) raw).trim();
+            if ("on".equalsIgnoreCase(normalized)
+                    || "true".equalsIgnoreCase(normalized)
+                    || "yes".equalsIgnoreCase(normalized)
+                    || "1".equals(normalized)) {
+                return true;
+            }
+            if ("off".equalsIgnoreCase(normalized)
+                    || "false".equalsIgnoreCase(normalized)
+                    || "no".equalsIgnoreCase(normalized)
+                    || "0".equals(normalized)
+                    || normalized.isEmpty()) {
+                return false;
+            }
+        }
+        return json.optBoolean(key, defaultValue);
     }
 
     private void ensureRunnerBuilder() {
