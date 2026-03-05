@@ -178,6 +178,8 @@ final class AiAgentExecutor {
                         liveExecution,
                         project.isRequireApprovals() && !project.isYoloMode(),
                         approvalTimeout);
+        OutputStream stdoutSink = new NonClosingSynchronizedOutputStream(outputHandler);
+        OutputStream stderrSink = new NonClosingSynchronizedOutputStream(outputHandler);
 
         int exitCode;
         try {
@@ -186,8 +188,8 @@ final class AiAgentExecutor {
                             .cmds(command)
                             .pwd(runDirectory)
                             .envs(extraEnv)
-                            .stdout(outputHandler)
-                            .stderr(outputHandler)
+                            .stdout(stdoutSink)
+                            .stderr(stderrSink)
                             .quiet(true)
                             .start();
             outputHandler.attach(proc);
@@ -316,6 +318,42 @@ final class AiAgentExecutor {
             return new FilePath(workspace.getChannel(), trimmed);
         }
         return workspace.child(trimmed);
+    }
+
+    /**
+     * Prevents one stream pump from closing the shared output handler while the other stream is
+     * still active. The Jenkins launcher may close stdout and stderr independently.
+     */
+    private static final class NonClosingSynchronizedOutputStream extends OutputStream {
+        private final OutputStream delegate;
+
+        NonClosingSynchronizedOutputStream(OutputStream delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            synchronized (delegate) {
+                delegate.write(b);
+            }
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            synchronized (delegate) {
+                delegate.write(b, off, len);
+            }
+        }
+
+        @Override
+        public void flush() throws IOException {
+            synchronized (delegate) {
+                delegate.flush();
+            }
+        }
+
+        @Override
+        public void close() {}
     }
 
     private static final class AgentOutputHandler extends LineTransformationOutputStream {
