@@ -50,7 +50,7 @@ Expected file content shape:
 name: "ai-agent-job"
 github: "jenkinsci/ai-agent-job-plugin"
 paths:
-  - "org/jenkins-ci/plugins/ai-agent-job"
+  - "io/jenkins/plugins/ai-agent-job"
 developers:
   - "<jenkins-account-id>"
 cd:
@@ -92,6 +92,6 @@ Checklist:
 
 ## 7. Cleanup and Transition
 
-- [ ] Mark personal-repo `release.yml` flow as legacy or remove it after official CD is stable.
+- [x] Retire personal-repo `release.yml` flow to avoid multiple release paths.
 - [ ] Add a short migration note in README that official releases now come from `jenkinsci/ai-agent-job-plugin`.
 - [ ] Keep `main` on next `-SNAPSHOT` after each release.

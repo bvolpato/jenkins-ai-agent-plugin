@@ -9,8 +9,9 @@
     <relativePath />
   </parent>
 
+  <groupId>io.jenkins.plugins</groupId>
   <artifactId>ai-agent-job</artifactId>
-  <version>${revision}${changelist}</version>
+  <version>${revision}.${changelist}</version>
   <packaging>hpi</packaging>
 
   <name>AI Agent Job</name>
@@ -24,12 +25,21 @@
     </license>
   </licenses>
 
+  <scm>
+    <connection>scm:git:https://github.com/bvolpato/jenkins-ai-agent-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:bvolpato/jenkins-ai-agent-plugin.git</developerConnection>
+    <tag>${scmTag}</tag>
+    <url>https://github.com/bvolpato/jenkins-ai-agent-plugin</url>
+  </scm>
+
   <properties>
     <revision>0.6.1</revision>
-    <changelist>-SNAPSHOT</changelist>
+    <changelist>999999-SNAPSHOT</changelist>
     <jenkins.baseline>2.528</jenkins.baseline>
     <jenkins.version>${jenkins.baseline}.3</jenkins.version>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
+    <hpi.strictBundledArtifacts>true</hpi.strictBundledArtifacts>
+    <ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
     <ban-junit4-imports.skip>true</ban-junit4-imports.skip>
   </properties>
 
@@ -37,8 +47,8 @@
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.528.x</artifactId>
-        <version>5774.v5c6d72f56a_61</version>
+        <artifactId>bom-${jenkins.baseline}.x</artifactId>
+        <version>6128.v8e4ce4620a_2b_</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -80,7 +90,7 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.12</version>
+        <version>0.8.14</version>
         <executions>
           <execution>
             <goals>
