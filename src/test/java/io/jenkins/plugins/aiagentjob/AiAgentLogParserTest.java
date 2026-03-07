@@ -216,6 +216,9 @@ public class AiAgentLogParserTest {
                         .collect(Collectors.toList());
 
         assertEquals("Should have 2 tool calls", 2, toolCalls.size());
+        assertTrue(
+                "Gemini tool calls should show extracted input",
+                toolCalls.stream().allMatch(e -> !e.getToolInput().isEmpty()));
     }
 
     // ======================== OpenCode Tests ========================
@@ -358,6 +361,33 @@ public class AiAgentLogParserTest {
                 "{\"type\":\"item.started\",\"item\":{\"id\":\"msg1\",\"type\":\"agent_message\",\"status\":\"in_progress\",\"text\":\"\"}}";
         AiAgentLogParser.ParsedLine line = AiAgentLogParser.parseLine(1, json);
         assertTrue(line.toEventView().isEmpty());
+    }
+
+    @Test
+    public void parseLine_handlesGeminiToolUseWithParameters() {
+        String json =
+                "{\"type\":\"tool_use\",\"tool_name\":\"read_file\",\"tool_id\":\"tool-1\",\"parameters\":{\"file_path\":\"/tmp/README.md\"}}";
+        AiAgentLogParser.ParsedLine line = AiAgentLogParser.parseLine(1, json);
+        assertEquals("tool_call", line.toEventView().getCategory());
+        assertTrue(line.toEventView().getToolInput().contains("/tmp/README.md"));
+        assertEquals("tool-1", line.getToolCallIdOrGenerated());
+    }
+
+    @Test
+    public void parseLine_skipsEmptyGeminiToolResult() {
+        String json =
+                "{\"type\":\"tool_result\",\"tool_id\":\"tool-1\",\"status\":\"success\",\"output\":\"\"}";
+        AiAgentLogParser.ParsedLine line = AiAgentLogParser.parseLine(1, json);
+        assertTrue(line.toEventView().isEmpty());
+    }
+
+    @Test
+    public void parseLine_handlesGeminiInitWithModel() {
+        String json =
+                "{\"type\":\"init\",\"timestamp\":\"2026-03-07T03:24:37.343Z\",\"session_id\":\"s1\",\"model\":\"gemini-3.1-pro-preview\"}";
+        AiAgentLogParser.ParsedLine line = AiAgentLogParser.parseLine(1, json);
+        assertEquals("system", line.toEventView().getCategory());
+        assertTrue(line.toEventView().getSummary().contains("gemini-3.1-pro-preview"));
     }
 
     @Test

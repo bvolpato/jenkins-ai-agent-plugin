@@ -119,6 +119,18 @@ final class AiAgentLogParser {
                     rawDetails);
         }
 
+        if (typeLower.equals("init")) {
+            String modelField = firstNonEmpty(json, "model");
+            if (!modelField.isEmpty()) {
+                return ParsedLine.system(lineNumber, "System", "Model: " + modelField, rawDetails);
+            }
+            String initText = extractText(json);
+            if (initText.isEmpty()) {
+                return ParsedLine.raw(lineNumber, "");
+            }
+            return ParsedLine.system(lineNumber, "System", initText, rawDetails);
+        }
+
         // Claude: assistant/user message with content array
         if (typeLower.equals("assistant") || typeLower.equals("user")) {
             JSONObject message = json.optJSONObject("message");
@@ -146,16 +158,29 @@ final class AiAgentLogParser {
         // Claude: standalone tool_use
         if (typeLower.equals("tool_use")) {
             String toolName = firstNonEmpty(json, "tool_name", "name");
-            String toolCallId = firstNonEmpty(json, "id", "tool_call_id");
-            String toolInput = extractToolInput(json.optJSONObject("input"), toolName);
+            String toolCallId = firstNonEmpty(json, "tool_id", "id", "tool_call_id");
+            JSONObject toolParameters = json.optJSONObject("input");
+            if (toolParameters == null) {
+                toolParameters = json.optJSONObject("parameters");
+            }
+            String toolInput = extractToolInput(toolParameters, toolName);
+            if (toolInput.isEmpty()) {
+                toolInput = extractText(json);
+            }
+            if (toolInput.isEmpty()) {
+                return ParsedLine.raw(lineNumber, "");
+            }
             return ParsedLine.toolCall(lineNumber, toolName, toolInput, rawDetails, toolCallId);
         }
 
         // Claude: standalone tool_result
         if (typeLower.equals("tool_result")) {
-            String toolCallId = firstNonEmpty(json, "tool_call_id", "id");
+            String toolCallId = firstNonEmpty(json, "tool_id", "tool_call_id", "id");
             String toolName = firstNonEmpty(json, "tool_name", "name");
             String output = extractToolResultContent(json);
+            if (output.isEmpty()) {
+                return ParsedLine.raw(lineNumber, "");
+            }
             return ParsedLine.toolResult(lineNumber, toolName, output, rawDetails, toolCallId);
         }
 
@@ -338,9 +363,24 @@ final class AiAgentLogParser {
     private static ParsedLine classifyCursorToolCall(
             long lineNumber, JSONObject json, String rawDetails) {
         String subtype = normalize(firstNonEmpty(json, "subtype"));
-        String callId = firstNonEmpty(json, "call_id");
+        String callId = firstNonEmpty(json, "call_id", "tool_call_id", "tool_id");
         String toolName = extractCursorToolName(json);
         JSONObject tc = json.optJSONObject("tool_call");
+
+        if (tc == null) {
+            if (toolName.isEmpty()) {
+                toolName = firstNonEmpty(json, "tool_name", "toolName", "name");
+            }
+            JSONObject parameters = json.optJSONObject("parameters");
+            String input = extractToolInput(parameters, toolName);
+            if (input.isEmpty()) {
+                input = firstNonEmpty(json, "text", "input", "command");
+            }
+            if (input.isEmpty()) {
+                return ParsedLine.raw(lineNumber, "");
+            }
+            return ParsedLine.toolCall(lineNumber, toolName, input, rawDetails, callId);
+        }
 
         if (subtype.equals("completed")) {
             String output = extractCursorToolOutput(tc, toolName);
